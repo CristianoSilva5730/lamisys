@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -29,7 +28,6 @@ import { User, UserRole } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import { formatDate } from "@/lib/utils";
 
-// Mock de dados de usuários (seria substituído por uma função real no database.ts)
 const mockUsers: User[] = [
   {
     id: "1",
@@ -69,20 +67,15 @@ export default function UserListPage() {
     role: UserRole.USUARIO
   });
   
-  // Verificar permissão
   const canManageUsers = hasPermission(user, PERMISSIONS.VIEW_EDIT_USERS);
   
-  // Carregar dados iniciais
   useEffect(() => {
     if (canManageUsers) {
-      // Aqui seria a chamada real para o banco de dados
       setUsers(mockUsers);
     }
   }, [canManageUsers]);
   
-  // Funções de manipulação
   const handleCreateUser = () => {
-    // Validar campos
     if (!newUser.name || !newUser.email || !newUser.matricula) {
       toast({
         title: "Erro",
@@ -92,7 +85,6 @@ export default function UserListPage() {
       return;
     }
     
-    // Criar novo usuário (simulado)
     const createdUser: User = {
       id: Date.now().toString(),
       ...newUser,
@@ -101,14 +93,12 @@ export default function UserListPage() {
     
     setUsers(prev => [...prev, createdUser]);
     
-    // Enviar e-mail com dados (simulado)
     console.log("Enviando email para", createdUser.email);
     toast({
       title: "Usuário criado",
       description: `E-mail com senha temporária enviado para ${createdUser.email}`
     });
     
-    // Resetar formulário
     setNewUser({
       name: "",
       email: "",
@@ -122,7 +112,6 @@ export default function UserListPage() {
   const handleEditUser = () => {
     if (!selectedUser) return;
     
-    // Atualizar usuário (simulado)
     setUsers(prev => 
       prev.map(u => u.id === selectedUser.id ? selectedUser : u)
     );
@@ -139,7 +128,6 @@ export default function UserListPage() {
   const handleDeleteUser = () => {
     if (!selectedUser) return;
     
-    // Excluir usuário (simulado)
     setUsers(prev => prev.filter(u => u.id !== selectedUser.id));
     
     toast({
@@ -152,14 +140,12 @@ export default function UserListPage() {
   };
   
   const handleResetPassword = (user: User) => {
-    // Simular reset de senha
     toast({
       title: "Senha redefinida",
       description: `Nova senha temporária enviada para ${user.email}`
     });
   };
   
-  // Renderização condicional se não tiver permissão
   if (!canManageUsers) {
     return (
       <div className="space-y-6">
@@ -173,7 +159,6 @@ export default function UserListPage() {
     );
   }
   
-  // Funções de manipulação
   const openEditDialog = (user: User) => {
     setSelectedUser({...user});
     setIsEditDialogOpen(true);
@@ -184,7 +169,6 @@ export default function UserListPage() {
     setIsDeleteDialogOpen(true);
   };
   
-  // Componente principal
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -195,7 +179,6 @@ export default function UserListPage() {
         </Button>
       </div>
       
-      {/* Lista de Usuários */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {users.map(user => (
           <Card key={user.id} className="overflow-hidden">
@@ -259,7 +242,6 @@ export default function UserListPage() {
         ))}
       </div>
       
-      {/* Dialog de Criar Usuário */}
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -329,7 +311,6 @@ export default function UserListPage() {
         </DialogContent>
       </Dialog>
       
-      {/* Dialog de Editar Usuário */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -401,7 +382,6 @@ export default function UserListPage() {
         </DialogContent>
       </Dialog>
       
-      {/* Dialog de Excluir Usuário */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -430,6 +410,15 @@ export default function UserListPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      
+      <div className="mt-8 pt-4 border-t border-border">
+        <p className="text-sm text-muted-foreground text-center">
+          Desenvolvido por Cristiano Vieira Silva - Exclusivamente para SINOBRAS
+        </p>
+        <p className="text-xs text-muted-foreground text-center mt-1">
+          © {new Date().getFullYear()} Todos os direitos reservados
+        </p>
+      </div>
     </div>
   );
 }
