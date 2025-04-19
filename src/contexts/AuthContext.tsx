@@ -1,6 +1,7 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
 import { User, UserRole } from "@/lib/types";
+import { getUserByEmail, seedDatabaseIfEmpty } from "@/lib/database";
 
 interface AuthContextType {
   user: User | null;
@@ -15,45 +16,14 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Mock users para demonstração
-const DEMO_USERS: User[] = [
-  {
-    id: "1",
-    name: "Admin",
-    email: "admin@sinobras.com.br",
-    matricula: "000001",
-    role: UserRole.ADMIN,
-    avatar: "",
-  },
-  {
-    id: "2",
-    name: "Desenvolvedor",
-    email: "dev@sinobras.com.br",
-    matricula: "000002",
-    role: UserRole.DEVELOP,
-    avatar: "",
-  },
-  {
-    id: "3",
-    name: "Planejador",
-    email: "planejador@sinobras.com.br",
-    matricula: "000003",
-    role: UserRole.PLANEJADOR,
-    avatar: "",
-  },
-  {
-    id: "4",
-    name: "Usuário",
-    email: "usuario@sinobras.com.br",
-    matricula: "000004",
-    role: UserRole.USUARIO,
-    avatar: "",
-  },
-];
-
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  // Inicializar o banco de dados local se estiver vazio
+  useEffect(() => {
+    seedDatabaseIfEmpty();
+  }, []);
 
   // Carregar usuário do localStorage ao iniciar
   useEffect(() => {
@@ -74,8 +44,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Simular uma chamada de API
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
-    // Encontrar usuário pelo email (mock)
-    const foundUser = DEMO_USERS.find(u => u.email === email);
+    // Encontrar usuário pelo email usando o banco de dados local
+    const foundUser = getUserByEmail(email);
     
     if (!foundUser) {
       setIsLoading(false);
@@ -112,8 +82,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Simular uma chamada de API
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
-    // Verificar se o email existe (mock)
-    const foundUser = DEMO_USERS.find(u => u.email === email);
+    // Verificar se o email existe usando o banco de dados local
+    const foundUser = getUserByEmail(email);
     
     if (!foundUser) {
       setIsLoading(false);

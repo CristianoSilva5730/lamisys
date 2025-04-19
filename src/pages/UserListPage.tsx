@@ -1,5 +1,5 @@
+
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { hasPermission, PERMISSIONS } from "@/lib/utils/permissions";
 import { Button } from "@/components/ui/button";
@@ -26,31 +26,7 @@ import {
 } from "@/components/ui/select";
 import { User, UserRole } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
-import { formatDate } from "@/lib/utils";
-
-const mockUsers: User[] = [
-  {
-    id: "1",
-    name: "João Silva",
-    email: "joao.silva@sinobras.com.br",
-    matricula: "12345",
-    role: UserRole.ADMIN
-  },
-  {
-    id: "2",
-    name: "Maria Oliveira",
-    email: "maria.oliveira@sinobras.com.br",
-    matricula: "23456",
-    role: UserRole.PLANEJADOR
-  },
-  {
-    id: "3",
-    name: "Pedro Santos",
-    email: "pedro.santos@sinobras.com.br",
-    matricula: "34567",
-    role: UserRole.USUARIO
-  }
-];
+import { getAllUsers, createUser, updateUser as updateUserInDb, deleteUser as deleteUserInDb } from "@/lib/database";
 
 export default function UserListPage() {
   const { user } = useAuth();
@@ -71,9 +47,24 @@ export default function UserListPage() {
   
   useEffect(() => {
     if (canManageUsers) {
-      setUsers(mockUsers);
+      // Carregar usuários do banco de dados local
+      const loadUsers = () => {
+        try {
+          const dbUsers = getAllUsers();
+          setUsers(dbUsers);
+        } catch (error) {
+          console.error("Erro ao carregar usuários:", error);
+          toast({
+            title: "Erro",
+            description: "Não foi possível carregar a lista de usuários",
+            variant: "destructive"
+          });
+        }
+      };
+      
+      loadUsers();
     }
-  }, [canManageUsers]);
+  }, [canManageUsers, toast]);
   
   const handleCreateUser = () => {
     if (!newUser.name || !newUser.email || !newUser.matricula) {
@@ -85,58 +76,91 @@ export default function UserListPage() {
       return;
     }
     
-    const createdUser: User = {
-      id: Date.now().toString(),
-      ...newUser,
-      isFirstAccess: true
-    };
-    
-    setUsers(prev => [...prev, createdUser]);
-    
-    console.log("Enviando email para", createdUser.email);
-    toast({
-      title: "Usuário criado",
-      description: `E-mail com senha temporária enviado para ${createdUser.email}`
-    });
-    
-    setNewUser({
-      name: "",
-      email: "",
-      matricula: "",
-      role: UserRole.USUARIO
-    });
-    
-    setIsCreateDialogOpen(false);
+    try {
+      const createdUser = createUser({
+        ...newUser,
+        isFirstAccess: true
+      });
+      
+      setUsers(prev => [...prev, createdUser]);
+      
+      console.log("Enviando email para", createdUser.email);
+      toast({
+        title: "Usuário criado",
+        description: `E-mail com senha temporária enviado para ${createdUser.email}`
+      });
+      
+      setNewUser({
+        name: "",
+        email: "",
+        matricula: "",
+        role: UserRole.USUARIO
+      });
+      
+      setIsCreateDialogOpen(false);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Erro ao criar usuário";
+      toast({
+        title: "Erro",
+        description: errorMessage,
+        variant: "destructive"
+      });
+    }
   };
   
   const handleEditUser = () => {
     if (!selectedUser) return;
     
-    setUsers(prev => 
-      prev.map(u => u.id === selectedUser.id ? selectedUser : u)
-    );
-    
-    toast({
-      title: "Usuário atualizado",
-      description: `Dados de ${selectedUser.name} atualizados com sucesso`
-    });
-    
-    setIsEditDialogOpen(false);
-    setSelectedUser(null);
+    try {
+      const updatedUser = updateUserInDb(selectedUser.id, selectedUser);
+      
+      if (updatedUser) {
+        setUsers(prev => 
+          prev.map(u => u.id === updatedUser.id ? updatedUser : u)
+        );
+        
+        toast({
+          title: "Usuário atualizado",
+          description: `Dados de ${updatedUser.name} atualizados com sucesso`
+        });
+      }
+      
+      setIsEditDialogOpen(false);
+      setSelectedUser(null);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Erro ao atualizar usuário";
+      toast({
+        title: "Erro",
+        description: errorMessage,
+        variant: "destructive"
+      });
+    }
   };
   
   const handleDeleteUser = () => {
     if (!selectedUser) return;
     
-    setUsers(prev => prev.filter(u => u.id !== selectedUser.id));
-    
-    toast({
-      title: "Usuário excluído",
-      description: `${selectedUser.name} foi removido do sistema`
-    });
-    
-    setIsDeleteDialogOpen(false);
-    setSelectedUser(null);
+    try {
+      const success = deleteUserInDb(selectedUser.id);
+      
+      if (success) {
+        setUsers(prev => prev.filter(u => u.id !== selectedUser.id));
+        
+        toast({
+          title: "Usuário excluído",
+          description: `${selectedUser.name} foi removido do sistema`
+        });
+      }
+      
+      setIsDeleteDialogOpen(false);
+      setSelectedUser(null);
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Não foi possível excluir o usuário",
+        variant: "destructive"
+      });
+    }
   };
   
   const handleResetPassword = (user: User) => {

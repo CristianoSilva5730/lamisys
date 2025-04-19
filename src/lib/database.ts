@@ -1,4 +1,3 @@
-
 /**
  * Mock de um banco de dados SQLite.
  * Em um aplicativo real, este código estaria no backend.
@@ -146,11 +145,17 @@ export function getUserById(id: string): User | undefined {
 
 export function getUserByEmail(email: string): User | undefined {
   const users = getAllUsers();
-  return users.find(u => u.email === email);
+  return users.find(u => u.email.toLowerCase() === email.toLowerCase());
 }
 
 export function createUser(user: Omit<User, "id">): User {
   const users = getAllUsers();
+  
+  // Verificar se já existe um usuário com o mesmo email
+  const existingUser = getUserByEmail(user.email);
+  if (existingUser) {
+    throw new Error(`Usuário com email ${user.email} já existe`);
+  }
   
   const newUser: User = {
     ...user,
@@ -168,6 +173,14 @@ export function updateUser(id: string, updates: Partial<User>): User | null {
   const index = users.findIndex(u => u.id === id);
   
   if (index === -1) return null;
+  
+  // Se estiver atualizando o email, verificar duplicidade
+  if (updates.email && updates.email !== users[index].email) {
+    const existingUser = getUserByEmail(updates.email);
+    if (existingUser && existingUser.id !== id) {
+      throw new Error(`Usuário com email ${updates.email} já existe`);
+    }
+  }
   
   users[index] = { ...users[index], ...updates };
   setItem(DB_KEYS.USERS, users);
@@ -272,7 +285,13 @@ export function seedDatabaseIfEmpty(): void {
       },
     ];
     
-    demoUsers.forEach(user => createUser(user));
+    demoUsers.forEach(user => {
+      try {
+        createUser(user);
+      } catch (error) {
+        console.error(`Erro ao criar usuário ${user.email}:`, error);
+      }
+    });
   }
   
   // Materiais
