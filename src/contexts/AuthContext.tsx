@@ -1,7 +1,7 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
 import { User, UserRole } from "@/lib/types";
-import { getUserByEmail, seedDatabaseIfEmpty } from "@/lib/database";
+import { getUserByEmail, seedDatabaseIfEmpty, getAllUsers, updateUser as updateUserInDb } from "@/lib/database";
 
 interface AuthContextType {
   user: User | null;
@@ -23,6 +23,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Inicializar o banco de dados local se estiver vazio
   useEffect(() => {
     seedDatabaseIfEmpty();
+    console.log("Banco de dados inicializado");
+    console.log("Usuários cadastrados:", getAllUsers());
   }, []);
 
   // Carregar usuário do localStorage ao iniciar
@@ -46,6 +48,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Encontrar usuário pelo email usando o banco de dados local
     const foundUser = getUserByEmail(email);
+    console.log("Tentando login para:", email);
+    console.log("Usuário encontrado:", foundUser);
     
     if (!foundUser) {
       setIsLoading(false);
@@ -68,6 +72,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     setUser(authenticatedUser);
     localStorage.setItem("lamisys-user", JSON.stringify(authenticatedUser));
+    
+    // Se não for primeiro acesso, atualizar esse status no banco de dados
+    if (!isFirstAccess && foundUser.isFirstAccess) {
+      updateUserInDb(foundUser.id, { ...foundUser, isFirstAccess: false });
+    }
+    
     setIsLoading(false);
   };
 
@@ -93,6 +103,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Em um app real, enviaria um email com senha temporária
     console.log(`Senha temporária enviada para ${email}: ${foundUser.name}${foundUser.matricula}`);
     
+    // Marcar como primeiro acesso novamente
+    updateUserInDb(foundUser.id, { ...foundUser, isFirstAccess: true });
+    
     setIsLoading(false);
   };
 
@@ -102,21 +115,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Simular uma chamada de API
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
+    if (!user) {
+      setIsLoading(false);
+      throw new Error("Usuário não autenticado");
+    }
+
     // Em um app real, verificaria a senha antiga no backend
-    if (oldPassword !== "senha123" && user && oldPassword !== `${user.name}${user.matricula}`) {
+    if (oldPassword !== "senha123" && oldPassword !== `${user.name}${user.matricula}`) {
       setIsLoading(false);
       throw new Error("Senha atual incorreta");
     }
 
     // Em um app real, atualizaria a senha no backend
-    console.log(`Senha atualizada para usuário ${user?.email}`);
+    console.log(`Senha atualizada para usuário ${user.email}`);
 
     // Atualizar estado do usuário
-    if (user) {
-      const updatedUser = { ...user, isFirstAccess: false };
-      setUser(updatedUser);
-      localStorage.setItem("lamisys-user", JSON.stringify(updatedUser));
-    }
+    const updatedUser = { ...user, isFirstAccess: false };
+    setUser(updatedUser);
+    localStorage.setItem("lamisys-user", JSON.stringify(updatedUser));
+    
+    // Atualizar usuário no banco de dados local
+    updateUserInDb(user.id, updatedUser);
     
     setIsLoading(false);
   };
@@ -126,6 +145,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const updatedUser = { ...user, ...userData };
       setUser(updatedUser);
       localStorage.setItem("lamisys-user", JSON.stringify(updatedUser));
+      
+      // Atualizar usuário no banco de dados local
+      updateUserInDb(user.id, updatedUser);
     }
   };
 

@@ -24,9 +24,11 @@ export function LoginForm() {
     setIsLoading(true);
     
     try {
+      console.log("Tentando login com:", email, "e senha:", password);
       await login(email, password);
       navigate("/");
     } catch (err) {
+      console.error("Erro de login:", err);
       setError(err instanceof Error ? err.message : "Erro ao fazer login. Tente novamente.");
     } finally {
       setIsLoading(false);
@@ -76,6 +78,10 @@ export function LoginForm() {
               required
               disabled={isLoading}
             />
+          </div>
+          <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            <p>Para primeiro acesso, use a senha: [seu nome][sua matrícula]</p>
+            <p>Ex: Admin000001</p>
           </div>
           <Button type="submit" className="w-full" disabled={isLoading}>
             {isLoading ? "Entrando..." : "Entrar"}
