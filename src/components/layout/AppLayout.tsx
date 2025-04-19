@@ -1,8 +1,10 @@
+
 import { useEffect } from "react";
 import { Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
+import { Logo } from "@/components/layout/Logo";
 import { seedDatabaseIfEmpty } from "@/lib/database";
 import { loadSavedSmtpSettings } from "@/lib/smtp";
 
@@ -41,7 +43,10 @@ export function AppLayout() {
       
       <div className="flex flex-col flex-1 overflow-hidden">
         <header className="flex h-14 items-center gap-4 border-b bg-muted/40 px-4 lg:h-[60px] lg:px-6">
-          <div className="flex flex-1 items-center justify-end gap-4">
+          <div className="flex-1 flex items-center">
+            <Logo className="md:hidden" showText={false} />
+          </div>
+          <div className="flex items-center gap-4">
             <ThemeToggle />
           </div>
         </header>

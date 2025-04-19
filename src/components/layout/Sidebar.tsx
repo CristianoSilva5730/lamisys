@@ -1,9 +1,8 @@
-
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { 
   ChevronLeft, 
-  ChevronRight, 
+  ChevronRight,
   LayoutDashboard, 
   Package, 
   PieChart, 
@@ -12,7 +11,8 @@ import {
   AlarmClock,
   Archive,
   LogOut,
-  ChevronDown
+  ChevronDown,
+  Logo
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
@@ -71,7 +71,6 @@ export function Sidebar() {
   const location = useLocation();
   const { user, logout } = useAuth();
   
-  // Obter iniciais para o avatar
   const getUserInitials = () => {
     if (!user?.name) return "U";
     return user.name.split(" ")
@@ -81,17 +80,14 @@ export function Sidebar() {
       .toUpperCase();
   };
   
-  // Verificar permissões
   const canCreateAlarms = hasPermission(user, PERMISSIONS.CREATE_ALARMS);
   const canManageUsers = hasPermission(user, PERMISSIONS.VIEW_EDIT_USERS);
   const canAccessSettings = hasPermission(user, PERMISSIONS.ACCESS_SETTINGS);
   
-  // Verificar se uma rota está ativa (incluindo sub-rotas)
   const isActive = (path: string) => {
     return location.pathname.startsWith(path);
   };
   
-  // Verificar se alguma sub-rota de materiais está ativa
   const isMaterialsActive = () => {
     return [
       "/materiais",
@@ -107,29 +103,14 @@ export function Sidebar() {
         collapsed ? "w-[70px]" : "w-[240px]"
       )}
     >
-      {/* Cabeçalho */}
       <div className="flex items-center p-4">
-        <div className="flex items-center space-x-2 flex-grow">
-          <div className="rounded-md bg-primary p-1">
-            <span className="text-primary-foreground font-bold text-sm">LS</span>
-          </div>
-          <h1 
-            className={cn(
-              "font-semibold text-xl transition-all text-lamisys-primary dark:text-white",
-              collapsed ? "opacity-0 w-0 overflow-hidden" : "opacity-100"
-            )}
-          >
-            LamiSys
-          </h1>
-        </div>
+        <Logo className={cn(collapsed && "w-8")} showText={!collapsed} />
       </div>
       
       <Separator />
       
-      {/* Menu Principal */}
       <div className="flex-1 overflow-y-auto p-2">
         <div className="space-y-1">
-          {/* Dashboard */}
           <SidebarItem 
             icon={LayoutDashboard} 
             label="Dashboard" 
@@ -138,7 +119,6 @@ export function Sidebar() {
             collapsed={collapsed} 
           />
           
-          {/* Materiais - Agora como uma seção colapsável */}
           <div className="pt-2">
             <Collapsible 
               open={materialsExpanded} 
@@ -176,7 +156,6 @@ export function Sidebar() {
               
               <CollapsibleContent className={collapsed ? "hidden" : "px-2 py-1"}>
                 <div className="space-y-1 pt-1">
-                  {/* Lista de Materiais */}
                   <SidebarItem 
                     icon={Package} 
                     label="Lista de Materiais" 
@@ -185,7 +164,6 @@ export function Sidebar() {
                     collapsed={collapsed} 
                   />
                   
-                  {/* Histórico de Exclusões */}
                   {hasPermission(user, PERMISSIONS.CREATE_DELETE_MATERIAL) && (
                     <SidebarItem 
                       icon={Archive} 
@@ -196,7 +174,6 @@ export function Sidebar() {
                     />
                   )}
                   
-                  {/* Analytics - Movido para dentro de Materiais */}
                   <SidebarItem 
                     icon={PieChart} 
                     label="Analytics" 
@@ -205,7 +182,6 @@ export function Sidebar() {
                     collapsed={collapsed} 
                   />
                   
-                  {/* Alarmes - Movido para dentro de Materiais */}
                   {canCreateAlarms && (
                     <SidebarItem 
                       icon={AlarmClock} 
@@ -220,7 +196,6 @@ export function Sidebar() {
             </Collapsible>
           </div>
           
-          {/* Administração */}
           {canManageUsers && (
             <div className="pt-2">
               <div 
@@ -241,7 +216,6 @@ export function Sidebar() {
             </div>
           )}
           
-          {/* Configurações - Apenas para Develop */}
           {canAccessSettings && (
             <div className="pt-2">
               <div 
@@ -264,7 +238,6 @@ export function Sidebar() {
         </div>
       </div>
       
-      {/* Rodapé */}
       <div className="p-2 border-t border-border">
         <div className="flex items-center p-2">
           <DropdownMenu>

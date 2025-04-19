@@ -1,8 +1,8 @@
-
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { LoginForm } from "@/components/auth/LoginForm";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
+import { Logo } from "@/components/layout/Logo";
 
 export default function LoginPage() {
   const { isAuthenticated, user } = useAuth();
@@ -20,9 +20,10 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen flex-col">
       <header className="flex h-14 items-center gap-4 border-b bg-muted/40 px-4 lg:h-[60px] lg:px-6">
-        <div className="flex flex-1 items-center justify-end">
-          <ThemeToggle />
+        <div className="flex-1">
+          <Logo />
         </div>
+        <ThemeToggle />
       </header>
       <main className="flex-1 flex flex-col items-center justify-center p-4 md:p-8 bg-muted/30">
         <div className="w-full max-w-md">
