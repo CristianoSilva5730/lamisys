@@ -18,6 +18,7 @@ import MaterialDeletedPage from "@/pages/MaterialDeletedPage";
 import AnalyticsPage from "@/pages/AnalyticsPage";
 import UserListPage from "@/pages/UserListPage";
 import AlarmPage from "@/pages/AlarmPage";
+import ProfilePage from "@/pages/ProfilePage";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -40,6 +41,7 @@ const App = () => (
               {/* Rotas protegidas */}
               <Route element={<AppLayout />}>
                 <Route path="/" element={<DashboardPage />} />
+                <Route path="/perfil" element={<ProfilePage />} />
                 
                 {/* Rotas de Materiais */}
                 <Route path="/materiais" element={<MaterialListPage />} />

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { hasPermission, PERMISSIONS } from "@/lib/utils/permissions";
@@ -41,7 +40,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 
-// Schema de validação para o formulário de alarme
 const alarmFormSchema = z.object({
   name: z.string().min(3, { message: "Nome deve ter pelo menos 3 caracteres" }),
   type: z.enum(["TEMPO_ETAPA", "TEMPO_TOTAL", "NOVO_ITEM"], {
@@ -55,7 +53,18 @@ const alarmFormSchema = z.object({
 
 type AlarmFormValues = z.infer<typeof alarmFormSchema>;
 
-// Mock de usuários para seleção de destinatários
+const createNewAlarm = (formData: z.infer<typeof alarmFormSchema>): AlarmRule => ({
+  id: Date.now().toString(),
+  name: formData.name,
+  type: formData.type,
+  condition: formData.condition,
+  value: formData.value,
+  recipients: formData.recipients,
+  active: true,
+  createdBy: user?.email || "sistema",
+  createdAt: new Date().toISOString(),
+});
+
 const mockUsers: User[] = [
   {
     id: "1",
@@ -80,7 +89,6 @@ const mockUsers: User[] = [
   }
 ];
 
-// Mock de alarmes existentes
 const mockAlarms: AlarmRule[] = [
   {
     id: "1",
@@ -123,7 +131,6 @@ export default function AlarmPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedAlarm, setSelectedAlarm] = useState<AlarmRule | null>(null);
   
-  // Formulário com react-hook-form e zod
   const form = useForm<AlarmFormValues>({
     resolver: zodResolver(alarmFormSchema),
     defaultValues: {
@@ -148,18 +155,14 @@ export default function AlarmPage() {
     },
   });
   
-  // Verificar permissão
   const canManageAlarms = hasPermission(user, PERMISSIONS.CREATE_ALARMS);
   
-  // Carregar dados iniciais
   useEffect(() => {
     if (canManageAlarms) {
-      // Aqui seria a chamada real para o banco de dados
       setAlarms(mockAlarms);
     }
   }, [canManageAlarms]);
   
-  // Reiniciar formulário ao abrir o dialog
   useEffect(() => {
     if (isCreateDialogOpen) {
       form.reset({
@@ -173,7 +176,6 @@ export default function AlarmPage() {
     }
   }, [isCreateDialogOpen, form]);
   
-  // Carregar dados para edição
   useEffect(() => {
     if (selectedAlarm && isEditDialogOpen) {
       editForm.reset({
@@ -187,15 +189,8 @@ export default function AlarmPage() {
     }
   }, [selectedAlarm, isEditDialogOpen, editForm]);
   
-  // Funções de manipulação
   const handleCreateAlarm = (values: AlarmFormValues) => {
-    // Criar novo alarme (simulado)
-    const createdAlarm: AlarmRule = {
-      id: Date.now().toString(),
-      ...values,
-      createdBy: user?.name || "Sistema",
-      createdAt: new Date().toISOString()
-    };
+    const createdAlarm: AlarmRule = createNewAlarm(values);
     
     setAlarms(prev => [...prev, createdAlarm]);
     
@@ -210,7 +205,6 @@ export default function AlarmPage() {
   const handleEditAlarm = (values: AlarmFormValues) => {
     if (!selectedAlarm) return;
     
-    // Atualizar alarme (simulado)
     const updatedAlarm = { 
       ...selectedAlarm, 
       ...values 
@@ -232,7 +226,6 @@ export default function AlarmPage() {
   const handleDeleteAlarm = () => {
     if (!selectedAlarm) return;
     
-    // Excluir alarme (simulado)
     setAlarms(prev => prev.filter(a => a.id !== selectedAlarm.id));
     
     toast({
@@ -245,7 +238,6 @@ export default function AlarmPage() {
   };
   
   const toggleAlarmStatus = (alarm: AlarmRule) => {
-    // Atualizar status do alarme
     const updatedAlarm = { ...alarm, active: !alarm.active };
     
     setAlarms(prev => 
@@ -258,7 +250,6 @@ export default function AlarmPage() {
     });
   };
   
-  // Funções para abrir dialogs
   const openEditDialog = (alarm: AlarmRule) => {
     setSelectedAlarm(alarm);
     setIsEditDialogOpen(true);
@@ -269,7 +260,6 @@ export default function AlarmPage() {
     setIsDeleteDialogOpen(true);
   };
   
-  // Renderização condicional se não tiver permissão
   if (!canManageAlarms) {
     return (
       <div className="space-y-6">
@@ -283,7 +273,6 @@ export default function AlarmPage() {
     );
   }
   
-  // Helper para exibir tipo do alarme em formato legível
   const getAlarmTypeLabel = (type: string) => {
     switch (type) {
       case "TEMPO_ETAPA": return "Tempo em etapa";
@@ -293,7 +282,6 @@ export default function AlarmPage() {
     }
   };
   
-  // Helper para exibir descrição do alarme
   const getAlarmDescription = (alarm: AlarmRule) => {
     switch (alarm.type) {
       case "TEMPO_ETAPA":
@@ -322,7 +310,6 @@ export default function AlarmPage() {
         </Button>
       </div>
       
-      {/* Tabs para filtrar alarmes */}
       <Tabs defaultValue="all" className="w-full">
         <TabsList>
           <TabsTrigger value="all">Todos</TabsTrigger>
@@ -367,8 +354,6 @@ export default function AlarmPage() {
         </TabsContent>
       </Tabs>
       
-      {/* Componente de renderização do cartão de alarme */}
-      {/* Dialog de Criar Alarme */}
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
@@ -529,7 +514,6 @@ export default function AlarmPage() {
         </DialogContent>
       </Dialog>
       
-      {/* Dialog de Editar Alarme */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
@@ -691,7 +675,6 @@ export default function AlarmPage() {
         </DialogContent>
       </Dialog>
       
-      {/* Dialog de Excluir Alarme */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -729,7 +712,6 @@ export default function AlarmPage() {
     </div>
   );
   
-  // Função para renderizar o cartão de alarme
   function renderAlarmCard(alarm: AlarmRule) {
     return (
       <Card key={alarm.id} className={`border ${alarm.active ? "border-primary/50" : "opacity-70"}`}>
