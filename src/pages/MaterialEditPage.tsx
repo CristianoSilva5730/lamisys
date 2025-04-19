@@ -6,6 +6,7 @@ import { hasPermission, PERMISSIONS } from "@/lib/utils/permissions";
 import { getMaterialById } from "@/lib/database";
 import { Material } from "@/lib/types";
 import { MaterialForm } from "@/components/materiais/MaterialForm";
+import { PrintButton } from "@/components/shared/PrintButton";
 
 export default function MaterialEditPage() {
   const { id } = useParams<{ id: string }>();
@@ -62,11 +63,14 @@ export default function MaterialEditPage() {
   
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Editar Material</h1>
-        <p className="text-muted-foreground mt-2">
-          Nota Fiscal: <span className="font-medium">{material.notaFiscal}</span>
-        </p>
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Editar Material</h1>
+          <p className="text-muted-foreground mt-2">
+            Nota Fiscal: <span className="font-medium">{material?.notaFiscal}</span>
+          </p>
+        </div>
+        <PrintButton className="print:hidden" />
       </div>
       
       <MaterialForm material={material} isEditing={true} />

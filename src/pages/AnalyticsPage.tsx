@@ -1,10 +1,10 @@
-
 import { useEffect, useState } from "react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, Legend } from "recharts";
 import { getAllMaterials } from "@/lib/database";
 import { Material } from "@/lib/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { differenceInDays } from "date-fns";
+import { PrintButton } from "@/components/shared/PrintButton";
 
 export default function AnalyticsPage() {
   const [materials, setMaterials] = useState<Material[]>([]);
@@ -12,12 +12,10 @@ export default function AnalyticsPage() {
   const [transportadoraData, setTransportadoraData] = useState<any[]>([]);
   const [empresaData, setEmpresaData] = useState<any[]>([]);
   
-  // Carregar dados ao montar o componente
   useEffect(() => {
     const allMaterials = getAllMaterials();
     setMaterials(allMaterials);
     
-    // Calcular tempos médios de entrega por transportadora
     const transportadoraTempos: Record<string, { total: number; count: number }> = {};
     
     allMaterials.forEach(material => {
@@ -37,18 +35,16 @@ export default function AnalyticsPage() {
       }
     });
     
-    // Converter para formato do gráfico
     const transportadoraResult = Object.entries(transportadoraTempos)
       .map(([name, { total, count }]) => ({
         name,
         dias: Math.round(total / count)
       }))
       .sort((a, b) => b.dias - a.dias)
-      .slice(0, 10); // Top 10
+      .slice(0, 10);
     
     setTransportadoraData(transportadoraResult);
     
-    // Calcular tempos médios de devolução por empresa
     const empresaTempos: Record<string, { total: number; count: number }> = {};
     
     allMaterials.forEach(material => {
@@ -68,18 +64,16 @@ export default function AnalyticsPage() {
       }
     });
     
-    // Converter para formato do gráfico
     const empresaResult = Object.entries(empresaTempos)
       .map(([name, { total, count }]) => ({
         name,
         dias: Math.round(total / count)
       }))
       .sort((a, b) => b.dias - a.dias)
-      .slice(0, 10); // Top 10
+      .slice(0, 10);
     
     setEmpresaData(empresaResult);
     
-    // Tempos médios até a entrega por tipo de material
     const entregaTempos: Record<string, { total: number; count: number }> = {};
     
     allMaterials.forEach(material => {
@@ -99,7 +93,6 @@ export default function AnalyticsPage() {
       }
     });
     
-    // Converter para formato do gráfico
     const entregaResult = Object.entries(entregaTempos)
       .map(([name, { total, count }]) => ({
         name,
@@ -112,16 +105,17 @@ export default function AnalyticsPage() {
   
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Analytics</h1>
-        <p className="text-muted-foreground mt-2">
-          Análise de dados e relatórios do sistema
-        </p>
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Analytics</h1>
+          <p className="text-muted-foreground mt-2">
+            Análise de dados e relatórios do sistema
+          </p>
+        </div>
+        <PrintButton className="print:hidden" />
       </div>
       
-      {/* Gráficos */}
-      <div className="grid gap-6 md:grid-cols-2">
-        {/* Tempo médio até entrega por tipo de material */}
+      <div className="grid gap-6 md:grid-cols-2 print:grid-cols-1">
         <Card className="col-span-2">
           <CardHeader>
             <CardTitle>Tempo Médio até Entrega por Tipo de Material</CardTitle>
@@ -150,7 +144,6 @@ export default function AnalyticsPage() {
           </CardContent>
         </Card>
         
-        {/* Tempo médio de entrega por transportadora */}
         <Card>
           <CardHeader>
             <CardTitle>Desempenho de Transportadoras</CardTitle>
@@ -180,7 +173,6 @@ export default function AnalyticsPage() {
           </CardContent>
         </Card>
         
-        {/* Tempo médio de devolução por empresa */}
         <Card>
           <CardHeader>
             <CardTitle>Desempenho de Empresas</CardTitle>
