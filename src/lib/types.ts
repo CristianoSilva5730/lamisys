@@ -1,4 +1,3 @@
-
 export interface User {
   id: string;
   name: string;
@@ -7,6 +6,15 @@ export interface User {
   role: UserRole;
   avatar?: string;
   isFirstAccess?: boolean;
+  supportComments?: SupportComment[];
+}
+
+export interface SupportComment {
+  id: string;
+  content: string;
+  createdBy: string;
+  createdAt: string;
+  priority?: 'LOW' | 'MEDIUM' | 'HIGH';
 }
 
 export enum UserRole {
