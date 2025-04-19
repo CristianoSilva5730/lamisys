@@ -11,11 +11,12 @@ import {
   Settings, 
   AlarmClock,
   Archive,
-  LogOut
+  LogOut,
+  ChevronDown
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
-import { PERMISSIONS, hasPermission } from "@/lib/utils/permissions";
+import { hasPermission, PERMISSIONS } from "@/lib/utils/permissions";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
@@ -28,6 +29,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 
 interface SidebarItemProps {
   icon: React.ElementType;
@@ -61,6 +67,7 @@ function SidebarItem({ icon: Icon, label, path, active, collapsed }: SidebarItem
 
 export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
+  const [materialsExpanded, setMaterialsExpanded] = useState(true);
   const location = useLocation();
   const { user, logout } = useAuth();
   
@@ -72,6 +79,25 @@ export function Sidebar() {
       .join("")
       .substring(0, 2)
       .toUpperCase();
+  };
+  
+  // Verificar permissões
+  const canCreateAlarms = hasPermission(user, PERMISSIONS.CREATE_ALARMS);
+  const canManageUsers = hasPermission(user, PERMISSIONS.VIEW_EDIT_USERS);
+  const canAccessSettings = hasPermission(user, PERMISSIONS.ACCESS_SETTINGS);
+  
+  // Verificar se uma rota está ativa (incluindo sub-rotas)
+  const isActive = (path: string) => {
+    return location.pathname.startsWith(path);
+  };
+  
+  // Verificar se alguma sub-rota de materiais está ativa
+  const isMaterialsActive = () => {
+    return [
+      "/materiais",
+      "/analytics",
+      "/alarmes"
+    ].some(path => location.pathname.startsWith(path));
   };
   
   return (
@@ -112,76 +138,90 @@ export function Sidebar() {
             collapsed={collapsed} 
           />
           
-          {/* Materiais */}
+          {/* Materiais - Agora como uma seção colapsável */}
           <div className="pt-2">
-            <div 
-              className={cn(
-                "px-3 py-1 text-xs uppercase font-semibold text-muted-foreground",
-                collapsed ? "opacity-0" : "opacity-100"
-              )}
+            <Collapsible 
+              open={materialsExpanded} 
+              onOpenChange={setMaterialsExpanded} 
+              className={cn(!collapsed && "border rounded-md")}
             >
-              Materiais
-            </div>
-            <SidebarItem 
-              icon={Package} 
-              label="Lista de Materiais" 
-              path="/materiais" 
-              active={location.pathname === "/materiais"} 
-              collapsed={collapsed} 
-            />
-            {hasPermission(user, PERMISSIONS.CREATE_DELETE_MATERIAL) && (
-              <SidebarItem 
-                icon={Archive} 
-                label="Histórico de Exclusões" 
-                path="/materiais/excluidos" 
-                active={location.pathname === "/materiais/excluidos"} 
-                collapsed={collapsed} 
-              />
-            )}
+              <CollapsibleTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  className={cn(
+                    "flex items-center justify-between w-full py-3 px-3 rounded-lg",
+                    isMaterialsActive() && "bg-accent text-accent-foreground",
+                    collapsed && "justify-center"
+                  )}
+                >
+                  <div className="flex items-center">
+                    <Package className={cn("h-5 w-5", collapsed ? "" : "mr-2")} />
+                    <span className={cn(
+                      "font-medium",
+                      collapsed ? "hidden" : "block"
+                    )}>
+                      Materiais
+                    </span>
+                  </div>
+                  {!collapsed && (
+                    <ChevronDown 
+                      className={cn(
+                        "h-4 w-4 transition-transform", 
+                        materialsExpanded ? "transform rotate-180" : ""
+                      )} 
+                    />
+                  )}
+                </Button>
+              </CollapsibleTrigger>
+              
+              <CollapsibleContent className={collapsed ? "hidden" : "px-2 py-1"}>
+                <div className="space-y-1 pt-1">
+                  {/* Lista de Materiais */}
+                  <SidebarItem 
+                    icon={Package} 
+                    label="Lista de Materiais" 
+                    path="/materiais" 
+                    active={location.pathname === "/materiais"} 
+                    collapsed={collapsed} 
+                  />
+                  
+                  {/* Histórico de Exclusões */}
+                  {hasPermission(user, PERMISSIONS.CREATE_DELETE_MATERIAL) && (
+                    <SidebarItem 
+                      icon={Archive} 
+                      label="Histórico de Exclusões" 
+                      path="/materiais/excluidos" 
+                      active={location.pathname === "/materiais/excluidos"} 
+                      collapsed={collapsed} 
+                    />
+                  )}
+                  
+                  {/* Analytics - Movido para dentro de Materiais */}
+                  <SidebarItem 
+                    icon={PieChart} 
+                    label="Analytics" 
+                    path="/analytics" 
+                    active={location.pathname === "/analytics"} 
+                    collapsed={collapsed} 
+                  />
+                  
+                  {/* Alarmes - Movido para dentro de Materiais */}
+                  {canCreateAlarms && (
+                    <SidebarItem 
+                      icon={AlarmClock} 
+                      label="Alarmes" 
+                      path="/alarmes" 
+                      active={location.pathname === "/alarmes"} 
+                      collapsed={collapsed} 
+                    />
+                  )}
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
           </div>
-          
-          {/* Análises */}
-          <div className="pt-2">
-            <div 
-              className={cn(
-                "px-3 py-1 text-xs uppercase font-semibold text-muted-foreground",
-                collapsed ? "opacity-0" : "opacity-100"
-              )}
-            >
-              Análises
-            </div>
-            <SidebarItem 
-              icon={PieChart} 
-              label="Analytics" 
-              path="/analytics" 
-              active={location.pathname === "/analytics"} 
-              collapsed={collapsed} 
-            />
-          </div>
-          
-          {/* Alarmes - Apenas para usuários com permissão */}
-          {hasPermission(user, PERMISSIONS.CREATE_ALARMS) && (
-            <div className="pt-2">
-              <div 
-                className={cn(
-                  "px-3 py-1 text-xs uppercase font-semibold text-muted-foreground",
-                  collapsed ? "opacity-0" : "opacity-100"
-                )}
-              >
-                Notificações
-              </div>
-              <SidebarItem 
-                icon={AlarmClock} 
-                label="Alarmes" 
-                path="/alarmes" 
-                active={location.pathname === "/alarmes"} 
-                collapsed={collapsed} 
-              />
-            </div>
-          )}
           
           {/* Administração */}
-          {hasPermission(user, PERMISSIONS.VIEW_EDIT_USERS) && (
+          {canManageUsers && (
             <div className="pt-2">
               <div 
                 className={cn(
@@ -202,7 +242,7 @@ export function Sidebar() {
           )}
           
           {/* Configurações - Apenas para Develop */}
-          {hasPermission(user, PERMISSIONS.ACCESS_SETTINGS) && (
+          {canAccessSettings && (
             <div className="pt-2">
               <div 
                 className={cn(

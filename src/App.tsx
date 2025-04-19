@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -15,6 +16,8 @@ import MaterialNewPage from "@/pages/MaterialNewPage";
 import MaterialEditPage from "@/pages/MaterialEditPage";
 import MaterialDeletedPage from "@/pages/MaterialDeletedPage";
 import AnalyticsPage from "@/pages/AnalyticsPage";
+import UserListPage from "@/pages/UserListPage";
+import AlarmPage from "@/pages/AlarmPage";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -47,7 +50,11 @@ const App = () => (
                 {/* Rotas de Analytics */}
                 <Route path="/analytics" element={<AnalyticsPage />} />
                 
-                {/* Outras rotas serão adicionadas para Usuários, Configurações e Alarmes */}
+                {/* Rotas de Usuários */}
+                <Route path="/usuarios" element={<UserListPage />} />
+                
+                {/* Rotas de Alarmes */}
+                <Route path="/alarmes" element={<AlarmPage />} />
               </Route>
               
               {/* Rota 404 */}
