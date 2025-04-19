@@ -13,7 +13,8 @@ import { useForm } from "react-hook-form";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { UserRole, PERMISSIONS } from "@/lib/utils/permissions";
+import { PERMISSIONS } from "@/lib/utils/permissions";
+import { UserRole } from "@/lib/types";
 import { useToast } from "@/components/ui/use-toast";
 import { Card } from "@/components/ui/card";
 
