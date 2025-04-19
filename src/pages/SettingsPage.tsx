@@ -3,6 +3,7 @@ import React from "react";
 import { SettingsForm } from "@/components/settings/SettingsForm";
 import { AutoBackupSettings } from "@/components/settings/AutoBackupSettings";
 import { ProfileSettings } from "@/components/settings/ProfileSettings";
+import { EmailTemplateSettings } from "@/components/settings/EmailTemplateSettings";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 
@@ -16,6 +17,7 @@ export default function SettingsPage() {
           <TabsTrigger value="general">Geral</TabsTrigger>
           <TabsTrigger value="backup">Backup Automático</TabsTrigger>
           <TabsTrigger value="profiles">Perfis de Usuário</TabsTrigger>
+          <TabsTrigger value="email">Templates de Email</TabsTrigger>
         </TabsList>
         
         <TabsContent value="general">
@@ -33,6 +35,12 @@ export default function SettingsPage() {
         <TabsContent value="profiles">
           <Card className="p-6">
             <ProfileSettings />
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="email">
+          <Card className="p-6">
+            <EmailTemplateSettings />
           </Card>
         </TabsContent>
       </Tabs>
