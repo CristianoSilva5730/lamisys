@@ -1,0 +1,75 @@
+
+import { useEffect, useState } from "react";
+import { useParams, Navigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { hasPermission, PERMISSIONS } from "@/lib/utils/permissions";
+import { getMaterialById } from "@/lib/database";
+import { Material } from "@/lib/types";
+import { MaterialForm } from "@/components/materiais/MaterialForm";
+
+export default function MaterialEditPage() {
+  const { id } = useParams<{ id: string }>();
+  const { user } = useAuth();
+  const [material, setMaterial] = useState<Material | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  
+  // Verificar permissão
+  const canEditMaterial = hasPermission(user, PERMISSIONS.EDIT_MATERIAL);
+  
+  // Buscar dados do material
+  useEffect(() => {
+    if (id) {
+      try {
+        const materialData = getMaterialById(id);
+        if (materialData) {
+          setMaterial(materialData);
+        } else {
+          setError("Material não encontrado");
+        }
+      } catch (err) {
+        setError("Erro ao carregar material");
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    }
+  }, [id]);
+  
+  // Redirecionar se não tiver permissão
+  if (!canEditMaterial) {
+    return <Navigate to="/materiais" />;
+  }
+  
+  // Exibir loading
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center p-8">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+  
+  // Exibir erro
+  if (error || !material) {
+    return (
+      <div className="p-8 text-center">
+        <h2 className="text-xl font-semibold text-destructive mb-2">{error || "Material não encontrado"}</h2>
+        <p className="text-muted-foreground">Verifique o ID do material e tente novamente.</p>
+      </div>
+    );
+  }
+  
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight">Editar Material</h1>
+        <p className="text-muted-foreground mt-2">
+          Nota Fiscal: <span className="font-medium">{material.notaFiscal}</span>
+        </p>
+      </div>
+      
+      <MaterialForm material={material} isEditing={true} />
+    </div>
+  );
+}

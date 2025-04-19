@@ -13,7 +13,7 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
 
-    --primary: 222.2 47.4% 11.2%;
+    --primary: 221.2 83.2% 53.3%;
     --primary-foreground: 210 40% 98%;
 
     --secondary: 210 40% 96.1%;
@@ -35,19 +35,12 @@
     --radius: 0.5rem;
 
     --sidebar-background: 0 0% 98%;
-
     --sidebar-foreground: 240 5.3% 26.1%;
-
     --sidebar-primary: 240 5.9% 10%;
-
     --sidebar-primary-foreground: 0 0% 98%;
-
     --sidebar-accent: 240 4.8% 95.9%;
-
     --sidebar-accent-foreground: 240 5.9% 10%;
-
     --sidebar-border: 220 13% 91%;
-
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
@@ -61,7 +54,7 @@
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 210 40% 98%;
+    --primary: 217.2 91.2% 59.8%;
     --primary-foreground: 222.2 47.4% 11.2%;
 
     --secondary: 217.2 32.6% 17.5%;
@@ -79,6 +72,7 @@
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
     --ring: 212.7 26.8% 83.9%;
+    
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;
@@ -97,5 +91,72 @@
 
   body {
     @apply bg-background text-foreground;
+    font-family: 'Inter', sans-serif;
+  }
+}
+
+@layer components {
+  .lamisys-title {
+    @apply text-2xl font-bold text-lamisys-primary dark:text-lamisys-accent;
+  }
+
+  .lamisys-card {
+    @apply bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-shadow duration-300;
+  }
+
+  .lamisys-form-group {
+    @apply mb-4;
+  }
+
+  .lamisys-label {
+    @apply block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1;
+  }
+
+  .lamisys-input {
+    @apply w-full rounded-md border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-lamisys-primary dark:bg-gray-700 dark:text-white;
+  }
+
+  .lamisys-btn-primary {
+    @apply px-4 py-2 bg-lamisys-primary hover:bg-blue-700 text-white rounded-md font-medium shadow-sm transition-colors;
+  }
+
+  .lamisys-btn-secondary {
+    @apply px-4 py-2 bg-lamisys-secondary hover:bg-blue-500 text-white rounded-md font-medium shadow-sm transition-colors;
+  }
+
+  .lamisys-btn-success {
+    @apply px-4 py-2 bg-lamisys-success hover:bg-green-600 text-white rounded-md font-medium shadow-sm transition-colors;
+  }
+
+  .lamisys-btn-danger {
+    @apply px-4 py-2 bg-lamisys-danger hover:bg-red-600 text-white rounded-md font-medium shadow-sm transition-colors;
+  }
+
+  .lamisys-btn-outline {
+    @apply px-4 py-2 border border-lamisys-primary text-lamisys-primary hover:bg-lamisys-primary hover:text-white rounded-md font-medium shadow-sm transition-colors;
+  }
+
+  .lamisys-badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+
+  .lamisys-badge-blue {
+    @apply bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100;
+  }
+
+  .lamisys-badge-green {
+    @apply bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100;
+  }
+
+  .lamisys-badge-yellow {
+    @apply bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-100;
+  }
+
+  .lamisys-badge-red {
+    @apply bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100;
+  }
+
+  .lamisys-badge-gray {
+    @apply bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-100;
   }
 }
