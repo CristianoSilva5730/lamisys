@@ -95,7 +95,7 @@ export function MaterialFilter({ onFilterChange, empresas }: MaterialFilterProps
               <SelectValue placeholder="Todos os status" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Todos os status</SelectItem>
+              <SelectItem value="todos">Todos os status</SelectItem>
               {Object.values(MaterialStatus).map((status) => (
                 <SelectItem key={status} value={status}>
                   {status}
@@ -116,7 +116,7 @@ export function MaterialFilter({ onFilterChange, empresas }: MaterialFilterProps
               <SelectValue placeholder="Todos os tipos" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Todos os tipos</SelectItem>
+              <SelectItem value="todos">Todos os tipos</SelectItem>
               {Object.values(MaterialType).map((tipo) => (
                 <SelectItem key={tipo} value={tipo}>
                   {tipo}
@@ -137,7 +137,7 @@ export function MaterialFilter({ onFilterChange, empresas }: MaterialFilterProps
               <SelectValue placeholder="Todas as empresas" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Todas as empresas</SelectItem>
+              <SelectItem value="todas">Todas as empresas</SelectItem>
               {empresas.map((empresa) => (
                 <SelectItem key={empresa} value={empresa}>
                   {empresa}
