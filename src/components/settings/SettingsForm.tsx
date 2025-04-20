@@ -1,4 +1,4 @@
-
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
-import { getSmtpSettings, updateSmtpSettings } from "@/lib/smtp";
+import { smtpAPI } from "@/services/api";
 
 const formSchema = z.object({
   server: z.string().min(1, "Servidor SMTP é obrigatório"),
@@ -18,21 +18,37 @@ export function SettingsForm() {
   const { toast } = useToast();
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: getSmtpSettings(),
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
+  useEffect(() => {
+    loadSettings();
+  }, []);
+
+  const loadSettings = async () => {
     try {
-      updateSmtpSettings(values);
+      const config = await smtpAPI.getConfig();
+      form.reset(config);
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Não foi possível carregar as configurações SMTP."
+      });
+    }
+  };
+
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    try {
+      await smtpAPI.updateConfig(values);
       toast({
         title: "Configurações atualizadas",
         description: "As configurações do sistema foram atualizadas com sucesso.",
       });
     } catch (error) {
       toast({
+        variant: "destructive",
         title: "Erro",
         description: "Ocorreu um erro ao atualizar as configurações.",
-        variant: "destructive",
       });
     }
   }

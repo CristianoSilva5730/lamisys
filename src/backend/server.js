@@ -1,4 +1,3 @@
-
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
@@ -436,7 +435,7 @@ function startServer() {
       }
     });
     
-    // Rotas para configuração SMTP
+    // SMTP Routes
     app.get('/api/smtp-config', (req, res) => {
       try {
         const config = db.getSMTPConfig();
@@ -451,7 +450,6 @@ function startServer() {
       try {
         const config = req.body;
         
-        // Validar dados
         if (!config.server || !config.port || !config.fromEmail) {
           return res.status(400).json({ error: 'Dados incompletos' });
         }
@@ -464,14 +462,25 @@ function startServer() {
       }
     });
     
-    // Rota para backup do banco de dados
-    app.post('/api/backup', (req, res) => {
+    // Backup Routes
+    app.post('/api/backup', async (req, res) => {
       try {
-        const backupPath = db.backupDatabase();
-        res.json({ success: true, backupPath });
+        const backupData = await db.exportDatabase();
+        res.json({ success: true, data: backupData });
       } catch (err) {
         console.error('Erro ao fazer backup:', err);
         res.status(500).json({ error: 'Erro ao fazer backup' });
+      }
+    });
+    
+    app.post('/api/backup/restore', async (req, res) => {
+      try {
+        const { data } = req.body;
+        await db.importDatabase(data);
+        res.json({ success: true });
+      } catch (err) {
+        console.error('Erro ao restaurar backup:', err);
+        res.status(500).json({ error: 'Erro ao restaurar backup' });
       }
     });
     

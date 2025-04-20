@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -42,14 +41,14 @@ export function AutoBackupSettings() {
     try {
       saveBackupSettings(values);
       toast({
-        title: "Configurações de backup atualizadas",
+        title: "Configurações atualizadas",
         description: "As configurações de backup automático foram salvas com sucesso.",
       });
     } catch (error) {
       toast({
+        variant: "destructive",
         title: "Erro",
         description: "Ocorreu um erro ao salvar as configurações de backup.",
-        variant: "destructive",
       });
     }
   }
@@ -57,26 +56,7 @@ export function AutoBackupSettings() {
   async function handleManualBackup() {
     try {
       setIsBackingUp(true);
-      const settings = getBackupSettings();
-      
-      // Simulação do backup - em um app real, isso seria feito no backend
-      const data = {
-        materials: localStorage.getItem('lamisys-materials'),
-        deletedMaterials: localStorage.getItem('lamisys-deleted-materials'),
-        users: localStorage.getItem('lamisys-users'),
-        alarms: localStorage.getItem('lamisys-alarms'),
-        smtp: localStorage.getItem('lamisys-smtp'),
-      };
-      
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `lamisys-backup-${new Date().toISOString().split('T')[0]}.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      await backupAPI.createBackup();
       
       toast({
         title: "Backup realizado",

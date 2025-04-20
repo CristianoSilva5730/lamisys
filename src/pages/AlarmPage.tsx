@@ -1,11 +1,6 @@
+import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import React, { useState, useEffect } from "react";
-import { 
-  getAllAlarms, 
-  createAlarm, 
-  updateAlarm, 
-  deleteAlarm 
-} from "@/lib/database";
+import { alarmAPI } from "@/services/api";
 import { AlarmRule } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,6 +35,7 @@ import { useToast } from "@/components/ui/use-toast";
 export default function AlarmPage() {
   const { user } = useAuth();
   const [alarms, setAlarms] = useState<AlarmRule[]>([]);
+  const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [currentAlarm, setCurrentAlarm] = useState<Partial<AlarmRule>>({});
@@ -50,9 +46,20 @@ export default function AlarmPage() {
     loadAlarms();
   }, []);
 
-  const loadAlarms = () => {
-    const loadedAlarms = getAllAlarms();
-    setAlarms(loadedAlarms);
+  const loadAlarms = async () => {
+    try {
+      setLoading(true);
+      const data = await alarmAPI.getAll();
+      setAlarms(data);
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Não foi possível carregar os alarmes."
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleCreateAlarm = () => {
@@ -68,48 +75,23 @@ export default function AlarmPage() {
     setIsDialogOpen(true);
   };
 
-  const handleEditAlarm = (alarm: AlarmRule) => {
-    setCurrentAlarm(alarm);
-    setIsDialogOpen(true);
-  };
-
-  const handleDeleteAlarm = (id: string) => {
-    setAlarmToDelete(id);
-    setIsDeleteDialogOpen(true);
-  };
-
-  const confirmDeleteAlarm = () => {
-    if (alarmToDelete) {
-      deleteAlarm(alarmToDelete);
-      loadAlarms();
-      setIsDeleteDialogOpen(false);
-      setAlarmToDelete(null);
-      toast({
-        title: "Alarme excluído",
-        description: "O alarme foi excluído com sucesso."
-      });
-    }
-  };
-
-  const handleSaveAlarm = () => {
+  const handleSaveAlarm = async () => {
     try {
       if (currentAlarm.id) {
-        // Atualizar alarme existente
-        updateAlarm(currentAlarm.id, currentAlarm as AlarmRule);
+        await alarmAPI.update(currentAlarm.id, currentAlarm as AlarmRule);
         toast({
           title: "Alarme atualizado",
           description: "O alarme foi atualizado com sucesso."
         });
       } else {
-        // Criar novo alarme
-        createAlarm(currentAlarm as Omit<AlarmRule, "id" | "createdAt">);
+        await alarmAPI.create(currentAlarm as Omit<AlarmRule, "id" | "createdAt">);
         toast({
           title: "Alarme criado",
           description: "O novo alarme foi criado com sucesso."
         });
       }
       
-      loadAlarms();
+      await loadAlarms();
       setIsDialogOpen(false);
     } catch (error) {
       toast({
@@ -118,6 +100,37 @@ export default function AlarmPage() {
         description: "Ocorreu um erro ao salvar o alarme."
       });
     }
+  };
+
+  const confirmDeleteAlarm = async () => {
+    if (alarmToDelete) {
+      try {
+        await alarmAPI.delete(alarmToDelete);
+        await loadAlarms();
+        setIsDeleteDialogOpen(false);
+        setAlarmToDelete(null);
+        toast({
+          title: "Alarme excluído",
+          description: "O alarme foi excluído com sucesso."
+        });
+      } catch (error) {
+        toast({
+          variant: "destructive",
+          title: "Erro",
+          description: "Ocorreu um erro ao excluir o alarme."
+        });
+      }
+    }
+  };
+
+  const handleEditAlarm = (alarm: AlarmRule) => {
+    setCurrentAlarm(alarm);
+    setIsDialogOpen(true);
+  };
+
+  const handleDeleteAlarm = (id: string) => {
+    setAlarmToDelete(id);
+    setIsDeleteDialogOpen(true);
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -212,7 +225,6 @@ export default function AlarmPage() {
         </Table>
       </div>
       
-      {/* Dialog para criar/editar alarme */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
@@ -312,7 +324,6 @@ export default function AlarmPage() {
         </DialogContent>
       </Dialog>
       
-      {/* Dialog de confirmação de exclusão */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
