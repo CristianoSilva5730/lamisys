@@ -1,34 +1,105 @@
+
 import axios from 'axios';
 import { toast } from '@/components/ui/use-toast';
 
-// Determinar a URL base da API
+// Determine the base URL for the API
+// In development, we'll use a mock implementation that doesn't require a real API
 const isDevelopment = process.env.NODE_ENV === 'development';
 
-// Em desenvolvimento, usar a URL local
-// Em produção com Electron, a API está em localhost:3000
-const baseURL = isDevelopment ? 'http://localhost:3000/api' : 'http://localhost:3000/api';
+// Get the current hostname to handle deployed environments
+const getBaseUrl = () => {
+  // For browser environments or when we're deployed
+  if (typeof window !== 'undefined') {
+    // For local development in the browser preview
+    if (window.location.hostname.includes('lovableproject.com')) {
+      // Use mock implementation for the preview environment
+      return '/api'; // This won't actually connect to a real API
+    }
+  }
+  
+  // Default for Electron app
+  return 'http://localhost:3000/api';
+};
+
+const baseURL = getBaseUrl();
+console.log('API Base URL:', baseURL);
 
 const api = axios.create({
   baseURL,
   timeout: 10000,
 });
 
-// Interceptador para tratar erros globalmente
+// Create a mock implementation for browser preview environments
+const createMockResponse = (data) => {
+  return Promise.resolve({ data });
+};
+
+// Interceptor for simulating responses in browser preview
+api.interceptors.request.use(async (config) => {
+  // Only apply mocking in browser preview environments
+  if (typeof window !== 'undefined' && window.location.hostname.includes('lovableproject.com')) {
+    console.log('Using mock implementation for', config.url);
+    
+    // Cancel the actual request
+    const source = axios.CancelToken.source();
+    config.cancelToken = source.token;
+    setTimeout(() => source.cancel('Mock implementation'), 0);
+    
+    // We'll handle the response in the response interceptor
+  }
+  return config;
+}, error => Promise.reject(error));
+
+// Interceptor to handle errors globally
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    // If this is our mock cancel, create a simulated response
+    if (axios.isCancel(error) && error.message === 'Mock implementation') {
+      // Get the request config
+      const { url, method, data } = error.config;
+      
+      // Create a mock response based on the request
+      if (url?.includes('/login')) {
+        return createMockResponse({ 
+          id: '1745111000880', 
+          name: 'Test User', 
+          email: error.config.data ? JSON.parse(error.config.data).email : 'test@example.com',
+          matricula: '123456',
+          role: 'ADMIN',
+          isFirstAccess: 0 
+        });
+      } else if (url?.includes('/change-password')) {
+        console.log('Mocking password change:', error.config.data);
+        // Simulate successful password change
+        return createMockResponse({ 
+          success: true, 
+          message: 'Senha alterada com sucesso' 
+        });
+      } else if (url?.includes('/reset-password')) {
+        return createMockResponse({ 
+          success: true, 
+          message: 'Senha redefinida com sucesso' 
+        });
+      }
+      
+      // Default mock response
+      return createMockResponse({ success: true });
+    }
+    
+    // Handle real errors
     let errorMessage = 'Ocorreu um erro na requisição';
     
     if (error.response) {
-      // Erro retornado pelo servidor
+      // Error returned by the server
       errorMessage = error.response.data?.error || `Erro ${error.response.status}: ${error.response.statusText}`;
     } else if (error.request) {
-      // Sem resposta do servidor
+      // No response from server
       errorMessage = 'Erro de conexão com o servidor. Verifique se o servidor está rodando.';
     }
     
-    // Mostrar toast de erro (exceto para erros 401 de autenticação que são tratados separadamente)
-    if (!error.config.url?.includes('/login') || error.response?.status !== 401) {
+    // Show error toast (except for authentication errors which are handled separately)
+    if (!error.config?.url?.includes('/login') || error.response?.status !== 401) {
       toast({
         title: 'Erro',
         description: errorMessage,
@@ -40,7 +111,7 @@ api.interceptors.response.use(
   }
 );
 
-// Exportar APIs específicas
+// Export specific APIs
 export const authAPI = {
   login: async (email: string, password: string) => {
     const response = await api.post('/login', { email, password });
