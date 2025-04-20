@@ -44,14 +44,16 @@ api.interceptors.request.use(async (config) => {
     const source = axios.CancelToken.source();
     config.cancelToken = source.token;
     
-    // Store URL and data for later use in mock response
+    // Store URL and method for later use in mock response
+    // Be careful not to include the full data object to avoid circular references
     const mockData = {
       url: config.url,
       method: config.method,
-      data: config.data ? config.data : null
+      // Only include essential data fields to avoid circular references
+      data: config.data ? JSON.stringify(config.data) : null
     };
     
-    // Cancel with a string to avoid circular references
+    // Cancel with string data to avoid circular references
     setTimeout(() => source.cancel('Mock implementation:' + JSON.stringify(mockData)), 0);
   }
   return config;
@@ -84,10 +86,9 @@ api.interceptors.response.use(
         if (url?.includes('/login')) {
           const email = requestData?.email || 'unknown@example.com';
           
-          // Simulação de verificação de senha para o mock
-          // Só aceitar Login para cristiano.silva@sinobras.com com a senha "Cristiano5730"
-          if (email === 'cristiano.silva@sinobras.com') {
-            const validPassword = requestData?.password === 'Cristiano5730';
+          // Garantir que cristiano.silva@sinobras.com seja tratado corretamente
+          if (email === 'cristiano.silva@sinobras.com' || email === 'cristiano.silva@sinobras.com.br') {
+            const validPassword = requestData?.password === 'Cristiano5730' || requestData?.password === 'Automacao@1423';
             
             if (!validPassword) {
               return Promise.reject({
@@ -98,14 +99,15 @@ api.interceptors.response.use(
               });
             }
             
-            // Login bem-sucedido
+            // Login bem-sucedido para Cristiano Silva
             return createMockResponse({ 
               id: '1745111000880', 
               name: 'Cristiano Silva', 
-              email: email,
+              email: 'cristiano.silva@sinobras.com',
               matricula: '5730',
               role: 'ADMIN',
-              isFirstAccess: 0
+              isFirstAccess: 0,
+              avatar: 'https://github.com/cristianovisk.png'
             });
           } else {
             // Qualquer outro email faz login normalmente para teste
