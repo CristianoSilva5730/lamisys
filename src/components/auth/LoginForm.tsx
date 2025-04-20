@@ -27,11 +27,13 @@ export function LoginForm() {
       console.log("Tentando login com:", email, "e senha:", password);
       const result = await login(email, password);
       
+      console.log("Resultado do login:", result);
+      
       // Verificar se é primeiro acesso
       if (result?.isFirstAccess) {
         // Redirecionar para a página de alteração de senha inicial
         console.log("Redirecionando para alteração de senha inicial");
-        navigate("/mudar-senha-inicial");
+        navigate("/mudar-senha");
         return;
       }
       

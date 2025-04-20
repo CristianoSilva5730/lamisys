@@ -54,10 +54,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw new Error("Dados de usuário inválidos retornados pelo servidor");
       }
       
-      // Converter isFirstAccess de número para booleano
+      // Converter isFirstAccess de número para booleano se necessário
       const authenticatedUser = {
         ...userData,
-        isFirstAccess: Boolean(userData.isFirstAccess)
+        isFirstAccess: userData.isFirstAccess === 1 ? true : false
       };
       
       setUser(authenticatedUser);

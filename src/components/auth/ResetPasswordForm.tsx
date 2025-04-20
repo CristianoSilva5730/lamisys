@@ -40,10 +40,10 @@ export function ResetPasswordForm() {
       // Garantir que o erro seja tratado corretamente, independente do formato
       let errorMessage = "Erro ao recuperar senha. Tente novamente.";
       
-      if (err instanceof Error) {
+      if (err.response?.data?.error) {
+        errorMessage = err.response.data.error;
+      } else if (err instanceof Error) {
         errorMessage = err.message;
-      } else if (typeof err === 'object' && err !== null) {
-        errorMessage = err.message || errorMessage;
       } else if (typeof err === 'string') {
         errorMessage = err;
       }

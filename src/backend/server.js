@@ -1,3 +1,4 @@
+
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
@@ -137,6 +138,8 @@ function startServer() {
       try {
         const { email, password } = req.body;
         
+        console.log(`Tentativa de login: ${email}`);
+        
         if (!email || !password) {
           return res.status(400).json({ error: 'Email e senha são obrigatórios' });
         }
@@ -144,25 +147,33 @@ function startServer() {
         const user = db.getUserByEmail(email);
         
         if (!user) {
+          console.log(`Usuário não encontrado: ${email}`);
           return res.status(401).json({ error: 'Usuário ou senha incorretos' });
         }
+        
+        console.log(`Usuário encontrado: ${user.name}, verificando senha`);
         
         // Verificar senha do usuário
         const isFirstTimePassword = password === `${user.name}${user.matricula}`;
-        const correctPassword = isFirstTimePassword || password === user.recoveryPassword;
+        const recoveryPasswordMatch = user.recoveryPassword && password === user.recoveryPassword;
+        const correctPassword = isFirstTimePassword || recoveryPasswordMatch;
         
         if (!correctPassword) {
+          console.log('Senha incorreta');
           return res.status(401).json({ error: 'Usuário ou senha incorretos' });
         }
         
+        console.log(`Login bem-sucedido para: ${user.name}`);
+        
         // Atualizar status de primeiro acesso se necessário
-        if (user.isFirstAccess && !isFirstTimePassword) {
-          db.updateUser(user.id, { ...user, isFirstAccess: 0 });
+        if (user.isFirstAccess && recoveryPasswordMatch) {
+          console.log(`Atualizando status de primeiro acesso para: ${user.id}`);
+          db.updateUser(user.id, { ...user, isFirstAccess: 1 });
         }
         
         res.json({
           ...user,
-          isFirstAccess: isFirstTimePassword ? 1 : 0
+          isFirstAccess: isFirstTimePassword || recoveryPasswordMatch ? 1 : 0
         });
       } catch (err) {
         console.error('Erro ao fazer login:', err);
@@ -221,7 +232,9 @@ function startServer() {
         }
         
         // Verificar senha antiga
-        const correctPassword = oldPassword === 'senha123' || oldPassword === `${user.name}${user.matricula}`;
+        const isFirstTimePassword = oldPassword === `${user.name}${user.matricula}`;
+        const recoveryPasswordMatch = user.recoveryPassword && oldPassword === user.recoveryPassword;
+        const correctPassword = isFirstTimePassword || recoveryPasswordMatch;
         
         if (!correctPassword) {
           return res.status(401).json({ error: 'Senha atual incorreta' });
@@ -229,7 +242,7 @@ function startServer() {
         
         // Em um app real, armazenaria a senha (hash) no banco
         // Aqui apenas atualizamos o status de primeiro acesso
-        db.updateUser(user.id, { ...user, isFirstAccess: 0 });
+        db.updateUser(user.id, { ...user, isFirstAccess: 0, recoveryPassword: null });
         
         res.json({ success: true, message: 'Senha alterada com sucesso' });
       } catch (err) {

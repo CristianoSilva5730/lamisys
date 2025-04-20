@@ -1,3 +1,4 @@
+
 import axios from 'axios';
 import { toast } from '@/components/ui/use-toast';
 
@@ -56,6 +57,7 @@ api.interceptors.response.use(
 // Export specific APIs
 export const authAPI = {
   login: async (email: string, password: string) => {
+    console.log(`Attempting login with email: ${email}`);
     const response = await api.post('/login', { email, password });
     return response.data;
   },
