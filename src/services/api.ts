@@ -48,7 +48,7 @@ api.interceptors.request.use(async (config) => {
     const mockData = {
       url: config.url,
       method: config.method,
-      data: config.data
+      data: config.data ? config.data : null
     };
     
     // Cancel with a string to avoid circular references
@@ -66,27 +66,67 @@ api.interceptors.response.use(
       try {
         // Extract the mock data from the message
         const mockDataStr = error.message.replace('Mock implementation:', '');
-        const { url, method, data } = JSON.parse(mockDataStr);
+        const mockData = JSON.parse(mockDataStr);
+        const { url, method } = mockData;
+        
+        let requestData = null;
+        if (mockData.data && typeof mockData.data === 'string') {
+          try {
+            requestData = JSON.parse(mockData.data);
+          } catch (e) {
+            requestData = mockData.data;
+          }
+        } else {
+          requestData = mockData.data;
+        }
         
         // Create a mock response based on the request
         if (url?.includes('/login')) {
-          return createMockResponse({ 
-            id: '1745111000880', 
-            name: 'Test User', 
-            email: data ? JSON.parse(data).email : 'test@example.com',
-            matricula: '123456',
-            role: 'ADMIN',
-            isFirstAccess: 0 
-          });
+          const email = requestData?.email || 'unknown@example.com';
+          
+          // Simulação de verificação de senha para o mock
+          // Só aceitar Login para cristiano.silva@sinobras.com com a senha "Cristiano5730"
+          if (email === 'cristiano.silva@sinobras.com') {
+            const validPassword = requestData?.password === 'Cristiano5730';
+            
+            if (!validPassword) {
+              return Promise.reject({
+                response: { 
+                  status: 401, 
+                  data: { error: 'Usuário ou senha incorretos' } 
+                }
+              });
+            }
+            
+            // Login bem-sucedido
+            return createMockResponse({ 
+              id: '1745111000880', 
+              name: 'Cristiano Silva', 
+              email: email,
+              matricula: '5730',
+              role: 'ADMIN',
+              isFirstAccess: 0
+            });
+          } else {
+            // Qualquer outro email faz login normalmente para teste
+            return createMockResponse({ 
+              id: Date.now().toString(), 
+              name: 'Test User', 
+              email: email,
+              matricula: '123456',
+              role: 'USUARIO',
+              isFirstAccess: 0 
+            });
+          }
         } else if (url?.includes('/change-password')) {
-          console.log('Mocking password change:', data);
+          console.log('Mocking password change:', requestData);
           // Simulate successful password change
           return createMockResponse({ 
             success: true, 
             message: 'Senha alterada com sucesso' 
           });
         } else if (url?.includes('/reset-password')) {
-          console.log('Mocking password reset:', data);
+          console.log('Mocking password reset:', requestData);
           return createMockResponse({ 
             success: true, 
             message: 'Senha redefinida com sucesso' 

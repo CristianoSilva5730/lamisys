@@ -8,7 +8,7 @@ interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<User | null>;
   logout: () => void;
   resetPassword: (email: string) => Promise<void>;
   changePassword: (oldPassword: string, newPassword: string) => Promise<void>;
@@ -26,7 +26,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const loadUser = () => {
       const storedUser = localStorage.getItem("lamisys-user");
       if (storedUser) {
-        setUser(JSON.parse(storedUser));
+        try {
+          setUser(JSON.parse(storedUser));
+        } catch (e) {
+          console.error("Erro ao carregar dados do usuário:", e);
+          localStorage.removeItem("lamisys-user");
+        }
       }
       setIsLoading(false);
     };
@@ -34,7 +39,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     loadUser();
   }, []);
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string): Promise<User | null> => {
     setIsLoading(true);
     
     try {
@@ -44,6 +49,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const userData = await authAPI.login(email, password);
       
       console.log("Usuário autenticado:", userData);
+      
+      if (!userData || !userData.id) {
+        throw new Error("Dados de usuário inválidos retornados pelo servidor");
+      }
       
       // Converter isFirstAccess de número para booleano
       const authenticatedUser = {
@@ -55,6 +64,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem("lamisys-user", JSON.stringify(authenticatedUser));
       
       setIsLoading(false);
+      return authenticatedUser;
     } catch (error) {
       console.error("Erro no login:", error);
       setIsLoading(false);

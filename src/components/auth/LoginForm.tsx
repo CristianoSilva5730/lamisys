@@ -8,7 +8,6 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { toast } from "@/components/ui/use-toast";
 
 export function LoginForm() {
   const [email, setEmail] = useState("");
@@ -29,24 +28,27 @@ export function LoginForm() {
       const result = await login(email, password);
       
       // Verificar se é primeiro acesso
-      const userData = localStorage.getItem("lamisys-user");
-      if (userData) {
-        const user = JSON.parse(userData);
-        console.log("Verificando primeiro acesso:", user);
-        
-        if (user.isFirstAccess) {
-          // Redirecionar para a página de alteração de senha inicial
-          console.log("Redirecionando para alteração de senha inicial");
-          navigate("/mudar-senha-inicial");
-          return;
-        }
+      if (result?.isFirstAccess) {
+        // Redirecionar para a página de alteração de senha inicial
+        console.log("Redirecionando para alteração de senha inicial");
+        navigate("/mudar-senha-inicial");
+        return;
       }
       
       // Se não for primeiro acesso, redirecionar para home
       navigate("/");
     } catch (err: any) {
       console.error("Erro de login:", err);
-      setError(err.response?.data?.error || "Erro ao fazer login. Tente novamente.");
+      
+      // Extrair mensagem de erro da resposta da API
+      let errorMessage = "Erro ao fazer login. Tente novamente.";
+      if (err.response?.data?.error) {
+        errorMessage = err.response.data.error;
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
