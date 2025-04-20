@@ -34,9 +34,21 @@ export function ResetPasswordForm() {
         title: "Senha temporária enviada",
         description: "Verifique seu email para instruções de login.",
       });
-    } catch (err) {
+    } catch (err: any) {
       console.error("Erro ao recuperar senha:", err);
-      setError(err instanceof Error ? err.message : "Erro ao recuperar senha. Tente novamente.");
+      
+      // Garantir que o erro seja tratado corretamente, independente do formato
+      let errorMessage = "Erro ao recuperar senha. Tente novamente.";
+      
+      if (err instanceof Error) {
+        errorMessage = err.message;
+      } else if (typeof err === 'object' && err !== null) {
+        errorMessage = err.message || errorMessage;
+      } else if (typeof err === 'string') {
+        errorMessage = err;
+      }
+      
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
