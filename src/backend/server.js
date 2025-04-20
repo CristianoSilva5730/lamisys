@@ -3,6 +3,7 @@ const cors = require('cors');
 const path = require('path');
 const db = require('./database');
 const bcrypt = require('bcryptjs');
+const smtpService = require('./services/smtp');
 
 // Criar o servidor Express
 const app = express();
@@ -207,6 +208,17 @@ function startServer() {
         
         // Em um app real, enviaria email com senha temporária
         console.log(`Senha temporária para ${email}: ${tempPassword}`);
+        
+        // Tentar enviar email se o SMTP estiver configurado
+        try {
+          const smtpConfig = db.getSMTPConfig();
+          if (smtpConfig && smtpConfig.server) {
+            smtpService.sendPasswordResetEmail(email, tempPassword);
+          }
+        } catch (emailErr) {
+          console.error('Erro ao enviar email de recuperação de senha:', emailErr);
+          // Continuar mesmo se o email falhar
+        }
         
         res.json({ success: true, message: 'Senha redefinida com sucesso' });
       } catch (err) {

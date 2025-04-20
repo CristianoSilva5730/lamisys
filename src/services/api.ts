@@ -160,6 +160,10 @@ export const backupAPI = {
     const response = await api.post('/backup');
     return response.data;
   },
+  restoreBackup: async (data: any) => {
+    const response = await api.post('/backup/restore', { data });
+    return response.data;
+  }
 };
 
 export default api;
