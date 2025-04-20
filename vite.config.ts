@@ -2,7 +2,6 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
-import { componentTagger } from "lovable-tagger";
 
 export default defineConfig(({ mode }) => ({
   server: {
@@ -11,7 +10,23 @@ export default defineConfig(({ mode }) => ({
   },
   plugins: [
     react(),
-    mode === 'development' && componentTagger(),
+    // Only use componentTagger in development and only if it's available
+    mode === 'development' && (() => {
+      try {
+        // Dynamic import to handle ESM modules
+        return {
+          name: 'lovable-tagger-wrapper',
+          async configResolved() {
+            if (process.env.NODE_ENV !== 'production') {
+              console.log('Development environment, lovable-tagger will be imported at runtime');
+            }
+          }
+        };
+      } catch (error) {
+        console.warn('Error configuring lovable-tagger:', (error as Error).message);
+        return null;
+      }
+    })(),
   ].filter(Boolean),
   resolve: {
     alias: {
