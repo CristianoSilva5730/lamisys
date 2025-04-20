@@ -1,9 +1,18 @@
+
 const path = require('path');
 const { app, BrowserWindow, ipcMain } = require('electron');
 const isDev = require('electron-is-dev');
 const serve = require('electron-serve');
 
-const { startServer } = require('./backend/server');
+// Importar o servidor de forma condicional para evitar erros
+let startServer;
+try {
+  const server = require('./backend/server');
+  startServer = server.startServer;
+} catch (e) {
+  console.error('Erro ao importar servidor:', e);
+  startServer = () => console.log('Servidor não inicializado');
+}
 
 // Carregar app a partir do build em produção
 const loadURL = serve({ directory: 'dist' });
@@ -28,7 +37,12 @@ const createWindow = () => {
     // Abrir o DevTools automaticamente em desenvolvimento
     mainWindow.webContents.openDevTools();
   } else {
-    loadURL(mainWindow);
+    try {
+      loadURL(mainWindow);
+    } catch (e) {
+      console.error('Erro ao carregar URL:', e);
+      mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
+    }
   }
 
   // Impedir fechamento da janela em ações específicas
@@ -45,11 +59,15 @@ const createWindow = () => {
 
 // Quando o Electron estiver pronto
 app.whenReady().then(() => {
-  // Iniciar o servidor Express
-  startServer();
-  
-  // Criar a janela principal
-  createWindow();
+  try {
+    // Iniciar o servidor Express
+    startServer();
+    
+    // Criar a janela principal
+    createWindow();
+  } catch (e) {
+    console.error('Erro ao inicializar aplicação:', e);
+  }
 
   // No macOS, é comum recriar uma janela quando o ícone do dock é clicado
   app.on('activate', () => {
@@ -69,4 +87,5 @@ app.on('window-all-closed', () => {
 // Fechar adequadamente em macOS
 app.on('before-quit', () => {
   // Aqui poderíamos realizar operações de limpeza antes de sair
+  console.log('Aplicação encerrando...');
 });
