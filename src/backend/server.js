@@ -137,34 +137,22 @@ function startServer() {
           return res.status(401).json({ error: 'Usuário ou senha incorretos' });
         }
         
-        // Em um ambiente real, a senha estaria hash no banco de dados
-        // Por enquanto vamos verificar algumas senhas fixas para teste
-        let correctPassword = false;
-        
-        // Condições especiais para o usuário Cristiano Silva
-        if (email === 'cristiano.silva@sinobras.com' || email === 'cristiano.silva@sinobras.com.br') {
-          correctPassword = password === 'Cristiano5730' || password === 'Automacao@1423';
-        } else {
-          // Para outros usuários, aceitar senha padrão ou nome+matrícula
-          correctPassword = password === 'senha123' || password === `${user.name}${user.matricula}`;
-        }
+        // Verificar senha única do usuário
+        const correctPassword = password === `${user.name}${user.matricula}`;
         
         if (!correctPassword) {
           return res.status(401).json({ error: 'Usuário ou senha incorretos' });
         }
         
-        // Verificar se é primeiro acesso
-        const isFirstAccess = password === `${user.name}${user.matricula}`;
-        
         // Se não for primeiro acesso e o banco diz que é, atualizar
-        if (!isFirstAccess && user.isFirstAccess) {
+        if (!correctPassword && user.isFirstAccess) {
           db.updateUser(user.id, { ...user, isFirstAccess: 0 });
         }
         
         // Retornar usuário autenticado
         res.json({
           ...user,
-          isFirstAccess: isFirstAccess ? 1 : 0
+          isFirstAccess: correctPassword ? 1 : 0
         });
       } catch (err) {
         console.error('Erro ao fazer login:', err);
