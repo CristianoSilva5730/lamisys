@@ -3,7 +3,7 @@ import React from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { UserPen } from "lucide-react";
+import { UserPen, Key } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,7 +17,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Card, CardHeader, CardContent } from "@/components/ui/card";
+import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
+import { useNavigate } from "react-router-dom";
 
 const profileSchema = z.object({
   name: z.string().min(1, "Nome é obrigatório"),
@@ -31,6 +32,7 @@ type ProfileValues = z.infer<typeof profileSchema>;
 export function ProfileForm() {
   const { user, updateUser } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const form = useForm<ProfileValues>({
     resolver: zodResolver(profileSchema),
@@ -68,6 +70,10 @@ export function ProfileForm() {
       .join("")
       .toUpperCase()
       .substring(0, 2);
+  };
+
+  const handleChangePassword = () => {
+    navigate("/mudar-senha");
   };
 
   return (
@@ -152,6 +158,15 @@ export function ProfileForm() {
           </form>
         </Form>
       </CardContent>
+      <CardFooter className="flex justify-between border-t pt-4 mt-4">
+        <div className="text-sm text-muted-foreground">
+          Última atualização: {new Date().toLocaleDateString()}
+        </div>
+        <Button variant="outline" onClick={handleChangePassword}>
+          <Key className="mr-2 h-4 w-4" />
+          Alterar Senha
+        </Button>
+      </CardFooter>
     </Card>
   );
 }
