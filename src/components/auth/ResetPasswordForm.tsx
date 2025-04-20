@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertCircle, AlertTriangle, CheckCircle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { toast } from "@/components/ui/use-toast";
 
 export function ResetPasswordForm() {
   const [email, setEmail] = useState("");
@@ -27,7 +28,14 @@ export function ResetPasswordForm() {
     try {
       await resetPassword(email);
       setSuccess(true);
+      
+      // Mostrar mensagem de sucesso
+      toast({
+        title: "Senha temporária enviada",
+        description: "Verifique seu email para instruções de login.",
+      });
     } catch (err) {
+      console.error("Erro ao recuperar senha:", err);
       setError(err instanceof Error ? err.message : "Erro ao recuperar senha. Tente novamente.");
     } finally {
       setIsLoading(false);

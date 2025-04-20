@@ -43,9 +43,10 @@ api.interceptors.request.use(async (config) => {
     // Cancel the actual request
     const source = axios.CancelToken.source();
     config.cancelToken = source.token;
-    setTimeout(() => source.cancel('Mock implementation'), 0);
-    
-    // We'll handle the response in the response interceptor
+    setTimeout(() => source.cancel({
+      message: 'Mock implementation',
+      config: config, // Attach the config to the cancel object
+    }), 0);
   }
   return config;
 }, error => Promise.reject(error));
@@ -56,27 +57,28 @@ api.interceptors.response.use(
   (error) => {
     // If this is our mock cancel, create a simulated response
     if (axios.isCancel(error) && error.message === 'Mock implementation') {
-      // Get the request config
-      const { url, method, data } = error.config;
+      // Get the request config from our custom cancel object
+      const { url, method, data } = error.config || {};
       
       // Create a mock response based on the request
       if (url?.includes('/login')) {
         return createMockResponse({ 
           id: '1745111000880', 
           name: 'Test User', 
-          email: error.config.data ? JSON.parse(error.config.data).email : 'test@example.com',
+          email: data ? JSON.parse(data).email : 'test@example.com',
           matricula: '123456',
           role: 'ADMIN',
           isFirstAccess: 0 
         });
       } else if (url?.includes('/change-password')) {
-        console.log('Mocking password change:', error.config.data);
+        console.log('Mocking password change:', data);
         // Simulate successful password change
         return createMockResponse({ 
           success: true, 
           message: 'Senha alterada com sucesso' 
         });
       } else if (url?.includes('/reset-password')) {
+        console.log('Mocking password reset:', data);
         return createMockResponse({ 
           success: true, 
           message: 'Senha redefinida com sucesso' 
@@ -99,7 +101,8 @@ api.interceptors.response.use(
     }
     
     // Show error toast (except for authentication errors which are handled separately)
-    if (!error.config?.url?.includes('/login') || error.response?.status !== 401) {
+    const url = error.config?.url;
+    if (!url?.includes('/login') || error.response?.status !== 401) {
       toast({
         title: 'Erro',
         description: errorMessage,
