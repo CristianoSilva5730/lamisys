@@ -45,7 +45,7 @@ export default defineConfig(({ mode }) => ({
   // Configurações para compatibilidade com Electron
   build: {
     outDir: 'dist',
-    minify: process.env.NODE_ENV === 'production',
+    minify: 'terser', // Set explicitly to use terser
     // Configurações adicionais para evitar problemas com ESM
     commonjsOptions: {
       transformMixedEsModules: true,
@@ -56,5 +56,23 @@ export default defineConfig(({ mode }) => ({
         drop_console: false,
       },
     },
+    // Increase chunk size warning limit to avoid warnings
+    chunkSizeWarningLimit: 1000,
+    // Manual chunks configuration to improve code splitting
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom', 'react-router-dom'],
+          ui: [
+            '@radix-ui/react-dialog',
+            '@radix-ui/react-dropdown-menu',
+            '@radix-ui/react-tooltip',
+            '@radix-ui/react-avatar'
+          ],
+          charts: ['recharts'],
+          forms: ['react-hook-form', 'zod']
+        }
+      }
+    }
   }
 }));
