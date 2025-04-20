@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const db = require('./database');
+const bcrypt = require('bcryptjs');
 
 // Criar o servidor Express
 const app = express();
@@ -136,8 +137,17 @@ function startServer() {
           return res.status(401).json({ error: 'Usuário ou senha incorretos' });
         }
         
-        // Verificar senha (em um ambiente real, usaria bcrypt ou similar)
-        const correctPassword = password === 'senha123' || password === `${user.name}${user.matricula}`;
+        // Em um ambiente real, a senha estaria hash no banco de dados
+        // Por enquanto vamos verificar algumas senhas fixas para teste
+        let correctPassword = false;
+        
+        // Condições especiais para o usuário Cristiano Silva
+        if (email === 'cristiano.silva@sinobras.com' || email === 'cristiano.silva@sinobras.com.br') {
+          correctPassword = password === 'Cristiano5730' || password === 'Automacao@1423';
+        } else {
+          // Para outros usuários, aceitar senha padrão ou nome+matrícula
+          correctPassword = password === 'senha123' || password === `${user.name}${user.matricula}`;
+        }
         
         if (!correctPassword) {
           return res.status(401).json({ error: 'Usuário ou senha incorretos' });
