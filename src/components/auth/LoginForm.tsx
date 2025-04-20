@@ -13,46 +13,19 @@ export function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
   
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, isLoading } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    setIsLoading(true);
     
     try {
-      console.log("Tentando login com:", email, "e senha:", password);
-      const result = await login(email, password);
-      
-      console.log("Resultado do login:", result);
-      
-      // Verificar se é primeiro acesso
-      if (result?.isFirstAccess) {
-        // Redirecionar para a página de alteração de senha inicial
-        console.log("Redirecionando para alteração de senha inicial");
-        navigate("/mudar-senha");
-        return;
-      }
-      
-      // Se não for primeiro acesso, redirecionar para home
-      navigate("/");
+      await login(email, password);
     } catch (err: any) {
-      console.error("Erro de login:", err);
-      
-      // Extrair mensagem de erro da resposta da API
-      let errorMessage = "Erro ao fazer login. Tente novamente.";
-      if (err.response?.data?.error) {
-        errorMessage = err.response.data.error;
-      } else if (err.message) {
-        errorMessage = err.message;
-      }
-      
-      setError(errorMessage);
-    } finally {
-      setIsLoading(false);
+      // Já tratado no contexto de autenticação
+      setError(err.response?.data?.error || "Erro ao fazer login");
     }
   };
 
@@ -104,7 +77,11 @@ export function LoginForm() {
             <p>Para primeiro acesso, use a senha: [seu nome][sua matrícula]</p>
             <p>Ex: Admin000001</p>
           </div>
-          <Button type="submit" className="w-full" disabled={isLoading}>
+          <Button 
+            type="submit" 
+            className="w-full" 
+            disabled={isLoading}
+          >
             {isLoading ? "Entrando..." : "Entrar"}
           </Button>
         </form>

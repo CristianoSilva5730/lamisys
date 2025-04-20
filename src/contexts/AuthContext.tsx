@@ -1,8 +1,8 @@
-
 import { createContext, useContext, useEffect, useState } from "react";
 import { User, UserRole } from "@/lib/types";
 import { authAPI } from "@/services/api";
 import { toast } from "@/components/ui/use-toast";
+import { useNavigate } from "react-router-dom";
 
 interface AuthContextType {
   user: User | null;
@@ -20,20 +20,23 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const navigate = useNavigate();
 
   // Carregar usuário do localStorage ao iniciar
   useEffect(() => {
     const loadUser = () => {
-      const storedUser = localStorage.getItem("lamisys-user");
-      if (storedUser) {
-        try {
-          setUser(JSON.parse(storedUser));
-        } catch (e) {
-          console.error("Erro ao carregar dados do usuário:", e);
-          localStorage.removeItem("lamisys-user");
+      try {
+        const storedUser = localStorage.getItem("lamisys-user");
+        if (storedUser) {
+          const parsedUser = JSON.parse(storedUser);
+          setUser(parsedUser);
         }
+      } catch (e) {
+        console.error("Erro ao carregar dados do usuário:", e);
+        localStorage.removeItem("lamisys-user");
+      } finally {
+        setIsLoading(false);
       }
-      setIsLoading(false);
     };
 
     loadUser();
@@ -43,32 +46,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsLoading(true);
     
     try {
-      console.log("Tentando login com:", email, "e senha:", password);
+      console.log("Tentando login com:", email);
       
-      // Fazer login usando a API
       const userData = await authAPI.login(email, password);
       
-      console.log("Usuário autenticado:", userData);
-      
       if (!userData || !userData.id) {
-        throw new Error("Dados de usuário inválidos retornados pelo servidor");
+        throw new Error("Dados de usuário inválidos");
       }
       
-      // Converter isFirstAccess de número para booleano se necessário
       const authenticatedUser = {
         ...userData,
-        isFirstAccess: userData.isFirstAccess === 1 ? true : false
+        isFirstAccess: userData.isFirstAccess === 1
       };
       
       setUser(authenticatedUser);
       localStorage.setItem("lamisys-user", JSON.stringify(authenticatedUser));
       
-      setIsLoading(false);
+      // Redirecionar baseado no primeiro acesso
+      if (authenticatedUser.isFirstAccess) {
+        navigate("/mudar-senha");
+      } else {
+        navigate("/");
+      }
+      
       return authenticatedUser;
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro no login:", error);
-      setIsLoading(false);
+      
+      // Usar toast para mensagens de erro
+      toast({
+        title: "Erro de Login",
+        description: error.response?.data?.error || "Erro ao fazer login",
+        variant: "destructive"
+      });
+      
       throw error;
+    } finally {
+      setIsLoading(false);
     }
   };
 
