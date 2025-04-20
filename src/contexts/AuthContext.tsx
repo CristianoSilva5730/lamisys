@@ -1,7 +1,7 @@
-
 import { createContext, useContext, useEffect, useState } from "react";
 import { User, UserRole } from "@/lib/types";
-import { getUserByEmail, seedDatabaseIfEmpty, getAllUsers, updateUser as updateUserInDb } from "@/lib/database";
+import { authAPI } from "@/services/api";
+import { toast } from "@/components/ui/use-toast";
 
 interface AuthContextType {
   user: User | null;
@@ -20,13 +20,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  // Inicializar o banco de dados local se estiver vazio
-  useEffect(() => {
-    seedDatabaseIfEmpty();
-    console.log("Banco de dados inicializado");
-    console.log("Usuários cadastrados:", getAllUsers());
-  }, []);
-
   // Carregar usuário do localStorage ao iniciar
   useEffect(() => {
     const loadUser = () => {
@@ -43,42 +36,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     
-    // Simular uma chamada de API
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-
-    // Encontrar usuário pelo email usando o banco de dados local
-    const foundUser = getUserByEmail(email);
-    console.log("Tentando login para:", email);
-    console.log("Usuário encontrado:", foundUser);
-    
-    if (!foundUser) {
+    try {
+      console.log("Tentando login com:", email, "e senha:", password);
+      
+      // Fazer login usando a API
+      const userData = await authAPI.login(email, password);
+      
+      console.log("Usuário autenticado:", userData);
+      
+      // Converter isFirstAccess de número para booleano
+      const authenticatedUser = {
+        ...userData,
+        isFirstAccess: Boolean(userData.isFirstAccess)
+      };
+      
+      setUser(authenticatedUser);
+      localStorage.setItem("lamisys-user", JSON.stringify(authenticatedUser));
+      
       setIsLoading(false);
-      throw new Error("Usuário ou senha incorretos");
-    }
-
-    // Simular verificação de senha (em um app real, usaria bcrypt ou similar)
-    if (password !== "senha123" && password !== `${foundUser.name}${foundUser.matricula}`) {
+    } catch (error) {
+      console.error("Erro no login:", error);
       setIsLoading(false);
-      throw new Error("Usuário ou senha incorretos");
+      throw error;
     }
-
-    // Verificar se é primeiro acesso
-    const isFirstAccess = password === `${foundUser.name}${foundUser.matricula}`;
-
-    const authenticatedUser = {
-      ...foundUser,
-      isFirstAccess,
-    };
-
-    setUser(authenticatedUser);
-    localStorage.setItem("lamisys-user", JSON.stringify(authenticatedUser));
-    
-    // Se não for primeiro acesso, atualizar esse status no banco de dados
-    if (!isFirstAccess && foundUser.isFirstAccess) {
-      updateUserInDb(foundUser.id, { ...foundUser, isFirstAccess: false });
-    }
-    
-    setIsLoading(false);
   };
 
   const logout = () => {
@@ -89,55 +69,51 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const resetPassword = async (email: string) => {
     setIsLoading(true);
     
-    // Simular uma chamada de API
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-
-    // Verificar se o email existe usando o banco de dados local
-    const foundUser = getUserByEmail(email);
-    
-    if (!foundUser) {
+    try {
+      // Usar a API para resetar a senha
+      await authAPI.resetPassword(email);
+      
+      toast({
+        title: "Senha redefinida",
+        description: "Uma nova senha foi enviada para o seu email.",
+      });
+      
       setIsLoading(false);
-      throw new Error("Email não encontrado");
+    } catch (error) {
+      console.error("Erro ao redefinir senha:", error);
+      setIsLoading(false);
+      throw error;
     }
-
-    // Em um app real, enviaria um email com senha temporária
-    console.log(`Senha temporária enviada para ${email}: ${foundUser.name}${foundUser.matricula}`);
-    
-    // Marcar como primeiro acesso novamente
-    updateUserInDb(foundUser.id, { ...foundUser, isFirstAccess: true });
-    
-    setIsLoading(false);
   };
 
   const changePassword = async (oldPassword: string, newPassword: string) => {
     setIsLoading(true);
     
-    // Simular uma chamada de API
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-
     if (!user) {
       setIsLoading(false);
       throw new Error("Usuário não autenticado");
     }
-
-    // Em um app real, verificaria a senha antiga no backend
-    if (oldPassword !== "senha123" && oldPassword !== `${user.name}${user.matricula}`) {
+    
+    try {
+      // Usar a API para mudar a senha
+      await authAPI.changePassword(user.id, oldPassword, newPassword);
+      
+      // Atualizar estado do usuário
+      const updatedUser = { ...user, isFirstAccess: false };
+      setUser(updatedUser);
+      localStorage.setItem("lamisys-user", JSON.stringify(updatedUser));
+      
+      toast({
+        title: "Senha alterada",
+        description: "Sua senha foi alterada com sucesso.",
+      });
+      
       setIsLoading(false);
-      throw new Error("Senha atual incorreta");
+    } catch (error) {
+      console.error("Erro ao alterar senha:", error);
+      setIsLoading(false);
+      throw error;
     }
-
-    // Em um app real, atualizaria a senha no backend
-    console.log(`Senha atualizada para usuário ${user.email}`);
-
-    // Atualizar estado do usuário
-    const updatedUser = { ...user, isFirstAccess: false };
-    setUser(updatedUser);
-    localStorage.setItem("lamisys-user", JSON.stringify(updatedUser));
-    
-    // Atualizar usuário no banco de dados local
-    updateUserInDb(user.id, updatedUser);
-    
-    setIsLoading(false);
   };
 
   const updateUser = (userData: Partial<User>) => {
@@ -145,9 +121,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const updatedUser = { ...user, ...userData };
       setUser(updatedUser);
       localStorage.setItem("lamisys-user", JSON.stringify(updatedUser));
-      
-      // Atualizar usuário no banco de dados local
-      updateUserInDb(user.id, updatedUser);
     }
   };
 

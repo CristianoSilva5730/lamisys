@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -27,9 +26,9 @@ export function LoginForm() {
       console.log("Tentando login com:", email, "e senha:", password);
       await login(email, password);
       navigate("/");
-    } catch (err) {
+    } catch (err: any) {
       console.error("Erro de login:", err);
-      setError(err instanceof Error ? err.message : "Erro ao fazer login. Tente novamente.");
+      setError(err.response?.data?.error || "Erro ao fazer login. Tente novamente.");
     } finally {
       setIsLoading(false);
     }
