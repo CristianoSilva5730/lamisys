@@ -138,42 +138,63 @@ function createTables() {
   console.log("Tabelas criadas com sucesso");
 }
 
-// Função para popular o banco com dados iniciais, se necessário
 function seedDatabase() {
-  // Verificar se já existem usuários
-  const userCount = db.prepare('SELECT COUNT(*) as count FROM users').get().count;
-  
-  if (userCount === 0) {
-    console.log("Populando banco de dados com dados iniciais...");
+  try {
+    // Verificar se já existem usuários
+    const userCount = db.prepare('SELECT COUNT(*) as count FROM users').get().count;
     
-    // Inserir usuários padrão
-    const insertUser = db.prepare(`
-      INSERT INTO users (id, name, email, matricula, role)
-      VALUES (?, ?, ?, ?, ?)
-    `);
-    
-    const users = [
-      { id: Date.now().toString() + '1', name: 'Admin', email: 'admin@sinobras.com.br', matricula: '000001', role: 'ADMIN' },
-      { id: Date.now().toString() + '2', name: 'Desenvolvedor', email: 'dev@sinobras.com.br', matricula: '000002', role: 'DEVELOP' },
-      { id: Date.now().toString() + '3', name: 'Planejador', email: 'planejador@sinobras.com.br', matricula: '000003', role: 'PLANEJADOR' },
-      { id: Date.now().toString() + '4', name: 'Usuário', email: 'usuario@sinobras.com.br', matricula: '000004', role: 'USUARIO' }
-    ];
-    
-    users.forEach(user => {
-      try {
-        insertUser.run(user.id, user.name, user.email, user.matricula, user.role);
-      } catch (err) {
-        console.error(`Erro ao inserir usuário ${user.email}:`, err.message);
-      }
-    });
-    
-    // Configuração SMTP padrão
-    db.prepare(`
-      INSERT INTO smtp_config (id, server, port, fromEmail)
-      VALUES (1, ?, ?, ?)
-    `).run('10.6.250.1', 25, 'LamiSys@sinobras.com.br');
-    
-    console.log("Dados iniciais inseridos com sucesso");
+    if (userCount === 0) {
+      console.log("Populando banco de dados com dados iniciais...");
+      
+      // Inserir usuários padrão
+      const insertUser = db.prepare(`
+        INSERT INTO users (id, name, email, matricula, role)
+        VALUES (?, ?, ?, ?, ?)
+      `);
+      
+      const users = [
+        { 
+          id: Date.now().toString() + '1', 
+          name: 'Cristiano Silva', 
+          email: 'cristiano.silva@sinobras.com.br', 
+          matricula: '5730', 
+          role: 'DEVELOP' 
+        },
+        { 
+          id: Date.now().toString() + '2', 
+          name: 'Admin', 
+          email: 'admin@sinobras.com.br', 
+          matricula: '000001', 
+          role: 'ADMIN' 
+        },
+        { 
+          id: Date.now().toString() + '3', 
+          name: 'Planejador', 
+          email: 'planejador@sinobras.com.br', 
+          matricula: '000003', 
+          role: 'PLANEJADOR' 
+        }
+      ];
+      
+      users.forEach(user => {
+        try {
+          insertUser.run(user.id, user.name, user.email, user.matricula, user.role);
+          console.log(`Usuário ${user.email} criado com sucesso`);
+        } catch (err) {
+          console.error(`Erro ao inserir usuário ${user.email}:`, err.message);
+        }
+      });
+      
+      // Configuração SMTP padrão
+      db.prepare(`
+        INSERT INTO smtp_config (id, server, port, fromEmail)
+        VALUES (1, ?, ?, ?)
+      `).run('10.6.250.1', 25, 'LamiSys@sinobras.com.br');
+      
+      console.log("Dados iniciais inseridos com sucesso");
+    }
+  } catch (err) {
+    console.error('Erro ao popular banco de dados:', err);
   }
 }
 
