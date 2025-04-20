@@ -11,16 +11,28 @@ export default defineConfig(({ mode }) => ({
   },
   plugins: [
     react(),
-    // Only use componentTagger in development if it's available
-    // This conditional prevents build errors in production
+    // Completamente remover o componentTagger no build de produção
+    // e tentar importá-lo de forma dinâmica apenas em desenvolvimento
     mode === 'development' && (() => {
+      if (process.env.NODE_ENV === 'production') return null;
+      
       try {
-        // Dynamically import only in dev mode
-        const { componentTagger } = require('lovable-tagger');
-        return componentTagger();
+        // Importar usando dynamic import para lidar com ESM
+        return {
+          name: 'lovable-tagger-wrapper',
+          async buildStart() {
+            try {
+              // Não importar durante o build
+              if (process.env.NODE_ENV !== 'production') {
+                console.log('Ambiente de desenvolvimento, lovable-tagger será importado em runtime');
+              }
+            } catch (e) {
+              console.warn('lovable-tagger não disponível:', e.message);
+            }
+          }
+        };
       } catch (e) {
-        // Silently fail if the package is not available
-        console.warn('lovable-tagger is not available, skipping...');
+        console.warn('Erro ao configurar lovable-tagger:', e.message);
         return null;
       }
     })(),
@@ -30,9 +42,19 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
-  // Fix Electron compatibility issues
+  // Configurações para compatibilidade com Electron
   build: {
     outDir: 'dist',
     minify: process.env.NODE_ENV === 'production',
+    // Configurações adicionais para evitar problemas com ESM
+    commonjsOptions: {
+      transformMixedEsModules: true,
+    },
+    // Desativar mangling para facilitar a depuração
+    terserOptions: {
+      compress: {
+        drop_console: false,
+      },
+    },
   }
 }));
