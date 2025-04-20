@@ -3,7 +3,7 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 
-// https://vitejs.dev/config/
+// https://vite.dev/config/
 export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
@@ -26,13 +26,13 @@ export default defineConfig(({ mode }) => ({
               if (process.env.NODE_ENV !== 'production') {
                 console.log('Ambiente de desenvolvimento, lovable-tagger será importado em runtime');
               }
-            } catch (e: unknown) {
-              console.warn('lovable-tagger não disponível:', e instanceof Error ? e.message : String(e));
+            } catch (error: unknown) {
+              console.warn('lovable-tagger não disponível:', error instanceof Error ? error.message : String(error));
             }
           }
         };
-      } catch (e: unknown) {
-        console.warn('Erro ao configurar lovable-tagger:', e instanceof Error ? e.message : String(e));
+      } catch (error: unknown) {
+        console.warn('Erro ao configurar lovable-tagger:', error instanceof Error ? error.message : String(error));
         return null;
       }
     })(),
@@ -76,3 +76,4 @@ export default defineConfig(({ mode }) => ({
     }
   }
 }));
+
