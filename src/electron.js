@@ -9,8 +9,8 @@ let startServer;
 try {
   const server = require('./backend/server');
   startServer = server.startServer;
-} catch (e) {
-  console.error('Erro ao importar servidor:', e);
+} catch (error) {
+  console.error('Erro ao importar servidor:', error);
   startServer = () => console.log('Servidor não inicializado');
 }
 
@@ -33,14 +33,14 @@ const createWindow = () => {
   // Em desenvolvimento, carrega a URL local de desenvolvimento
   // Em produção, carrega o app com electron-serve
   if (isDev) {
-    mainWindow.loadURL('http://localhost:5173');
+    mainWindow.loadURL('http://localhost:8080');
     // Abrir o DevTools automaticamente em desenvolvimento
     mainWindow.webContents.openDevTools();
   } else {
     try {
       loadURL(mainWindow);
-    } catch (e) {
-      console.error('Erro ao carregar URL:', e);
+    } catch (error) {
+      console.error('Erro ao carregar URL:', error);
       mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
     }
   }
@@ -65,8 +65,8 @@ app.whenReady().then(() => {
     
     // Criar a janela principal
     createWindow();
-  } catch (e) {
-    console.error('Erro ao inicializar aplicação:', e);
+  } catch (error) {
+    console.error('Erro ao inicializar aplicação:', error);
   }
 
   // No macOS, é comum recriar uma janela quando o ícone do dock é clicado

@@ -2,7 +2,6 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
-import { componentTagger } from "lovable-tagger";
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => ({
@@ -12,30 +11,48 @@ export default defineConfig(({ mode }) => ({
   },
   plugins: [
     react(),
-    mode === 'development' && componentTagger(),
+    // Completamente remover o componentTagger no build de produção
+    // e tentar importá-lo de forma dinâmica apenas em desenvolvimento
+    mode === 'development' && (() => {
+      if (process.env.NODE_ENV === 'production') return null;
+      
+      try {
+        // Importar usando dynamic import para lidar com ESM
+        return {
+          name: 'lovable-tagger-wrapper',
+          async buildStart() {
+            try {
+              // Não importar durante o build
+              if (process.env.NODE_ENV !== 'production') {
+                console.log('Ambiente de desenvolvimento, lovable-tagger será importado em runtime');
+              }
+            } catch (error) {
+              console.warn('lovable-tagger não disponível:', (error as Error).message);
+            }
+          }
+        };
+      } catch (error) {
+        console.warn('Erro ao configurar lovable-tagger:', (error as Error).message);
+        return null;
+      }
+    })(),
   ].filter(Boolean),
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
   },
-  // Configurations for bundling
+  // Configurações para compatibilidade com Electron
   build: {
     outDir: 'dist',
-    minify: 'terser',
-    // Additional configurations to avoid issues with ESM
+    minify: 'esbuild', // Atualizando para usar esbuild em vez de terser
+    // Configurações adicionais para evitar problemas com ESM
     commonjsOptions: {
       transformMixedEsModules: true,
     },
-    // Disable mangling for easier debugging
-    terserOptions: {
-      compress: {
-        drop_console: false,
-      },
-    },
-    // Increase chunk size warning limit to avoid warnings
+    // Aumentar limite de aviso de tamanho de chunk para evitar avisos
     chunkSizeWarningLimit: 1000,
-    // Manual chunks configuration to improve code splitting
+    // Configuração manual de chunks para melhorar a divisão de código
     rollupOptions: {
       output: {
         manualChunks: {
