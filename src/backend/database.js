@@ -50,6 +50,7 @@ function createTables() {
       role TEXT NOT NULL,
       avatar TEXT,
       isFirstAccess INTEGER DEFAULT 1,
+      recoveryPassword TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `);

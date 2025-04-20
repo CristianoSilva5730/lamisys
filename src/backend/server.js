@@ -15,6 +15,16 @@ app.use(express.urlencoded({ extended: true }));
 // Inicializar o banco de dados
 let database;
 
+function generateRandomPassword(length = 10) {
+  const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
+  let password = '';
+  for (let i = 0; i < length; i++) {
+    const randomIndex = Math.floor(Math.random() * charset.length);
+    password += charset[randomIndex];
+  }
+  return password;
+}
+
 function startServer() {
   try {
     // Inicializar o banco de dados
@@ -137,22 +147,22 @@ function startServer() {
           return res.status(401).json({ error: 'Usuário ou senha incorretos' });
         }
         
-        // Verificar senha única do usuário
-        const correctPassword = password === `${user.name}${user.matricula}`;
+        // Verificar senha do usuário
+        const isFirstTimePassword = password === `${user.name}${user.matricula}`;
+        const correctPassword = isFirstTimePassword || password === user.recoveryPassword;
         
         if (!correctPassword) {
           return res.status(401).json({ error: 'Usuário ou senha incorretos' });
         }
         
-        // Se não for primeiro acesso e o banco diz que é, atualizar
-        if (!correctPassword && user.isFirstAccess) {
+        // Atualizar status de primeiro acesso se necessário
+        if (user.isFirstAccess && !isFirstTimePassword) {
           db.updateUser(user.id, { ...user, isFirstAccess: 0 });
         }
         
-        // Retornar usuário autenticado
         res.json({
           ...user,
-          isFirstAccess: correctPassword ? 1 : 0
+          isFirstAccess: isFirstTimePassword ? 1 : 0
         });
       } catch (err) {
         console.error('Erro ao fazer login:', err);
@@ -175,11 +185,18 @@ function startServer() {
           return res.status(404).json({ error: 'Email não encontrado' });
         }
         
-        // Em um app real, enviaria email com senha temporária
-        console.log(`Senha temporária para ${email}: ${user.name}${user.matricula}`);
+        // Gerar senha aleatória
+        const tempPassword = generateRandomPassword();
         
-        // Marcar como primeiro acesso novamente
-        db.updateUser(user.id, { ...user, isFirstAccess: 1 });
+        // Atualizar usuário com a nova senha temporária
+        db.updateUser(user.id, { 
+          ...user, 
+          recoveryPassword: tempPassword,
+          isFirstAccess: 1 
+        });
+        
+        // Em um app real, enviaria email com senha temporária
+        console.log(`Senha temporária para ${email}: ${tempPassword}`);
         
         res.json({ success: true, message: 'Senha redefinida com sucesso' });
       } catch (err) {
