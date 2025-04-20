@@ -11,28 +11,28 @@ export default defineConfig(({ mode }) => ({
   },
   plugins: [
     react(),
-    // Completamente remover o componentTagger no build de produção
-    // e tentar importá-lo de forma dinâmica apenas em desenvolvimento
+    // Development mode plugin for Lovable features
     mode === 'development' && (() => {
       if (process.env.NODE_ENV === 'production') return null;
       
       try {
-        // Importar usando dynamic import para lidar com ESM
         return {
           name: 'lovable-tagger-wrapper',
           async buildStart() {
             try {
-              // Não importar durante o build
+              // Only import in development
               if (process.env.NODE_ENV !== 'production') {
                 console.log('Ambiente de desenvolvimento, lovable-tagger será importado em runtime');
               }
-            } catch (e) {
-              console.warn('lovable-tagger não disponível:', e.message);
+            } catch (error: unknown) {
+              const err = error as Error;
+              console.warn('lovable-tagger não disponível:', err.message);
             }
           }
         };
-      } catch (e) {
-        console.warn('Erro ao configurar lovable-tagger:', e.message);
+      } catch (error: unknown) {
+        const err = error as Error;
+        console.warn('Erro ao configurar lovable-tagger:', err.message);
         return null;
       }
     })(),
@@ -42,19 +42,31 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
-  // Configurações para compatibilidade com Electron
+  // Build configuration for production
   build: {
     outDir: 'dist',
-    minify: process.env.NODE_ENV === 'production',
-    // Configurações adicionais para evitar problemas com ESM
+    minify: 'esbuild',
+    // Additional settings for ESM compatibility
     commonjsOptions: {
       transformMixedEsModules: true,
     },
-    // Desativar mangling para facilitar a depuração
-    terserOptions: {
-      compress: {
-        drop_console: false,
-      },
-    },
+    // Increase chunk size warning limit
+    chunkSizeWarningLimit: 1000,
+    // Manual chunk configuration for better code splitting
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom', 'react-router-dom'],
+          ui: [
+            '@radix-ui/react-dialog',
+            '@radix-ui/react-dropdown-menu',
+            '@radix-ui/react-tooltip',
+            '@radix-ui/react-avatar'
+          ],
+          charts: ['recharts'],
+          forms: ['react-hook-form', 'zod']
+        }
+      }
+    }
   }
 }));

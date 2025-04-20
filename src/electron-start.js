@@ -1,11 +1,6 @@
 
 #!/usr/bin/env node
 
-/**
- * This is a helper script to start the Electron app
- * Usage: node electron-start.js
- */
-
 const { spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs');
