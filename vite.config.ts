@@ -2,8 +2,8 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
+import { componentTagger } from "lovable-tagger";
 
-// https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
@@ -11,31 +11,7 @@ export default defineConfig(({ mode }) => ({
   },
   plugins: [
     react(),
-    // Development mode plugin for Lovable features
-    mode === 'development' && (() => {
-      if (process.env.NODE_ENV === 'production') return null;
-      
-      try {
-        return {
-          name: 'lovable-tagger-wrapper',
-          async buildStart() {
-            try {
-              // Only import in development
-              if (process.env.NODE_ENV !== 'production') {
-                console.log('Ambiente de desenvolvimento, lovable-tagger será importado em runtime');
-              }
-            } catch (error: unknown) {
-              const err = error as Error;
-              console.warn('lovable-tagger não disponível:', err.message);
-            }
-          }
-        };
-      } catch (error: unknown) {
-        const err = error as Error;
-        console.warn('Erro ao configurar lovable-tagger:', err.message);
-        return null;
-      }
-    })(),
+    mode === 'development' && componentTagger(),
   ].filter(Boolean),
   resolve: {
     alias: {
