@@ -3,13 +3,14 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { hasPermission, PERMISSIONS } from "@/lib/utils/permissions";
-import { getAllMaterials } from "@/lib/database";
 import { Material } from "@/lib/types";
 import { MaterialItem } from "@/components/materiais/MaterialItem";
 import { DeleteMaterialDialog } from "@/components/materiais/DeleteMaterialDialog";
 import { MaterialFilter, FilterParams } from "@/components/materiais/MaterialFilter";
 import { Button } from "@/components/ui/button";
 import { FilePlus } from "lucide-react";
+import { materialAPI } from "@/services/api";
+import { toast } from "@/components/ui/use-toast";
 
 export default function MaterialListPage() {
   const { user } = useAuth();
@@ -23,6 +24,7 @@ export default function MaterialListPage() {
     tipo: "",
     empresa: ""
   });
+  const [loading, setLoading] = useState(true);
   
   // Lista única de empresas para o filtro
   const [empresas, setEmpresas] = useState<string[]>([]);
@@ -35,15 +37,27 @@ export default function MaterialListPage() {
     loadMaterials();
   }, []);
   
-  // Função para carregar materiais
-  const loadMaterials = () => {
-    const allMaterials = getAllMaterials();
-    setMaterials(allMaterials);
-    setFilteredMaterials(allMaterials);
-    
-    // Extrair lista única de empresas
-    const uniqueEmpresas = Array.from(new Set(allMaterials.map(m => m.empresa))).sort();
-    setEmpresas(uniqueEmpresas);
+  // Função para carregar materiais da API
+  const loadMaterials = async () => {
+    setLoading(true);
+    try {
+      const allMaterials = await materialAPI.getAll();
+      setMaterials(allMaterials);
+      setFilteredMaterials(allMaterials);
+      
+      // Extrair lista única de empresas
+      const uniqueEmpresas = Array.from(new Set(allMaterials.map(m => m.empresa))).sort();
+      setEmpresas(uniqueEmpresas);
+    } catch (error) {
+      console.error("Erro ao carregar materiais:", error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível carregar os materiais.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
   };
   
   // Aplicar filtros aos materiais
@@ -112,22 +126,31 @@ export default function MaterialListPage() {
         empresas={empresas} 
       />
       
+      {/* Estado de carregamento */}
+      {loading && (
+        <div className="flex justify-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      )}
+      
       {/* Lista de Materiais */}
-      <div className="space-y-4">
-        {filteredMaterials.length === 0 ? (
-          <div className="text-center py-8 border border-dashed rounded-lg">
-            <p className="text-muted-foreground">Nenhum material encontrado.</p>
-          </div>
-        ) : (
-          filteredMaterials.map(material => (
-            <MaterialItem 
-              key={material.id} 
-              material={material}
-              onDelete={handleDelete}
-            />
-          ))
-        )}
-      </div>
+      {!loading && (
+        <div className="space-y-4">
+          {filteredMaterials.length === 0 ? (
+            <div className="text-center py-8 border border-dashed rounded-lg">
+              <p className="text-muted-foreground">Nenhum material encontrado.</p>
+            </div>
+          ) : (
+            filteredMaterials.map(material => (
+              <MaterialItem 
+                key={material.id} 
+                material={material}
+                onDelete={handleDelete}
+              />
+            ))
+          )}
+        </div>
+      )}
       
       {/* Dialog de Exclusão */}
       <DeleteMaterialDialog

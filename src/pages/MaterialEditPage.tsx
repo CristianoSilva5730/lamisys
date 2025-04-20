@@ -3,10 +3,11 @@ import { useEffect, useState } from "react";
 import { useParams, Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { hasPermission, PERMISSIONS } from "@/lib/utils/permissions";
-import { getMaterialById } from "@/lib/database";
 import { Material } from "@/lib/types";
 import { MaterialForm } from "@/components/materiais/MaterialForm";
 import { PrintButton } from "@/components/shared/PrintButton";
+import { materialAPI } from "@/services/api";
+import { toast } from "@/components/ui/use-toast";
 
 export default function MaterialEditPage() {
   const { id } = useParams<{ id: string }>();
@@ -18,22 +19,32 @@ export default function MaterialEditPage() {
   // Verificar permissão
   const canEditMaterial = hasPermission(user, PERMISSIONS.EDIT_MATERIAL);
   
-  // Buscar dados do material
+  // Buscar dados do material da API
   useEffect(() => {
     if (id) {
-      try {
-        const materialData = getMaterialById(id);
-        if (materialData) {
-          setMaterial(materialData);
-        } else {
-          setError("Material não encontrado");
+      const fetchMaterial = async () => {
+        setLoading(true);
+        try {
+          const materialData = await materialAPI.getById(id);
+          if (materialData) {
+            setMaterial(materialData);
+          } else {
+            setError("Material não encontrado");
+          }
+        } catch (err) {
+          setError("Erro ao carregar material");
+          toast({
+            title: "Erro",
+            description: "Não foi possível carregar os dados do material.",
+            variant: "destructive"
+          });
+          console.error(err);
+        } finally {
+          setLoading(false);
         }
-      } catch (err) {
-        setError("Erro ao carregar material");
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
+      };
+      
+      fetchMaterial();
     }
   }, [id]);
   

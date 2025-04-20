@@ -1,10 +1,8 @@
 
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Material, MaterialStatus, MaterialType } from "@/lib/types";
 import { useAuth } from "@/contexts/AuthContext";
-import { createMaterial, updateMaterial } from "@/lib/database";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,6 +12,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { MaterialHistory } from "@/components/materiais/MaterialHistory";
 import { AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { materialAPI } from "@/services/api";
+import { toast } from "@/components/ui/use-toast";
 
 interface MaterialFormProps {
   material?: Material;
@@ -94,27 +94,44 @@ export function MaterialForm({ material, isEditing = false }: MaterialFormProps)
     
     try {
       if (isEditing && material) {
-        // Atualizar material existente
-        const updated = updateMaterial(
+        // Atualizar material existente via API
+        await materialAPI.update(
           material.id,
           formData,
           user.email
         );
         
-        if (!updated) {
-          throw new Error("Erro ao atualizar material");
-        }
+        toast({
+          title: "Sucesso",
+          description: "Material atualizado com sucesso."
+        });
       } else {
-        // Criar novo material
-        createMaterial({
-          ...formData as Omit<Material, "id" | "createdAt" | "createdBy" | "history">,
+        // Criar novo material via API
+        const materialData = {
+          ...formData,
+          createdBy: user.email,
+          createdAt: new Date().toISOString()
+        };
+        
+        await materialAPI.create(materialData);
+        
+        toast({
+          title: "Sucesso",
+          description: "Material cadastrado com sucesso."
         });
       }
       
       // Redirecionar para a lista após sucesso
       navigate("/materiais");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao processar material");
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.error || "Erro ao processar material";
+      setError(errorMessage);
+      
+      toast({
+        title: "Erro",
+        description: errorMessage,
+        variant: "destructive"
+      });
     } finally {
       setIsSubmitting(false);
     }
