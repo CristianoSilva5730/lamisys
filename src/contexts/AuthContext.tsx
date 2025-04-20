@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useEffect, useState } from "react";
 import { User, UserRole } from "@/lib/types";
 import { authAPI } from "@/services/api";
@@ -95,6 +96,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     
     try {
+      console.log("Alterando senha para usuário:", user.id);
       // Usar a API para mudar a senha
       await authAPI.changePassword(user.id, oldPassword, newPassword);
       
@@ -102,6 +104,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const updatedUser = { ...user, isFirstAccess: false };
       setUser(updatedUser);
       localStorage.setItem("lamisys-user", JSON.stringify(updatedUser));
+      
+      console.log("Senha alterada com sucesso para usuário:", user.id);
+      console.log("Estado do usuário após alteração:", updatedUser);
       
       toast({
         title: "Senha alterada",

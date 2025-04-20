@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertCircle, CheckCircle, Info } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { toast } from "@/components/ui/use-toast";
 
 export function ChangePasswordForm({ isFirstAccess = false }) {
   const [oldPassword, setOldPassword] = useState("");
@@ -18,7 +19,7 @@ export function ChangePasswordForm({ isFirstAccess = false }) {
   const [isLoading, setIsLoading] = useState(false);
   
   const navigate = useNavigate();
-  const { changePassword, user } = useAuth();
+  const { changePassword, user, logout } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,14 +41,27 @@ export function ChangePasswordForm({ isFirstAccess = false }) {
     setIsLoading(true);
     
     try {
+      console.log("Tentando alterar senha para o usuário:", user?.id);
       await changePassword(oldPassword, newPassword);
       setSuccess(true);
       
+      toast({
+        title: "Senha alterada com sucesso",
+        description: "Sua nova senha foi salva. Você será redirecionado para o login.",
+      });
+      
       // Redirecionar após 2 segundos se a alteração for bem-sucedida
       setTimeout(() => {
-        navigate("/");
+        if (isFirstAccess) {
+          // Se for primeiro acesso, fazer logout para forçar novo login com a nova senha
+          logout();
+          navigate("/login");
+        } else {
+          navigate("/");
+        }
       }, 2000);
     } catch (err) {
+      console.error("Erro ao alterar senha:", err);
       setError(err instanceof Error ? err.message : "Erro ao alterar senha. Tente novamente.");
     } finally {
       setIsLoading(false);
