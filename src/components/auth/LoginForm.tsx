@@ -6,8 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertCircle, Info } from "lucide-react";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertCircle, Info, Server } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { toast } from "@/components/ui/use-toast";
 
 export function LoginForm() {
@@ -38,7 +38,7 @@ export function LoginForm() {
       let errorMessage = "Erro ao fazer login. Tente novamente.";
       
       if (err.message && err.message.includes("network")) {
-        errorMessage = "Erro de conexão com o servidor. Verifique se o servidor está rodando.";
+        errorMessage = "Erro de conexão com o servidor. Verifique se o servidor está rodando executando 'npm run dev:server' no terminal.";
       } else if (err.response?.data?.error) {
         errorMessage = err.response.data.error;
       } else if (err.message) {
@@ -101,9 +101,18 @@ export function LoginForm() {
           </div>
           <Alert className="mt-2 bg-blue-50 border-blue-200 text-blue-800 dark:bg-blue-900/30 dark:border-blue-800 dark:text-blue-300">
             <Info className="h-4 w-4" />
-            <AlertDescription>
-              Para primeiro acesso, use a senha: [seu nome][sua matrícula]<br />
-              Ex: <strong>Admin000001</strong>
+            <AlertDescription className="space-y-2">
+              <p>Para primeiro acesso, use a senha: [seu nome][sua matrícula]</p>
+              <p>Ex: <strong>Admin000001</strong></p>
+              <p className="text-xs mt-1">Nota: O servidor precisa estar online para fazer login.</p>
+            </AlertDescription>
+          </Alert>
+          <Alert className="mt-2 bg-amber-50 border-amber-200 text-amber-800 dark:bg-amber-900/30 dark:border-amber-800 dark:text-amber-300">
+            <Server className="h-4 w-4" />
+            <AlertTitle>Servidor do Backend</AlertTitle>
+            <AlertDescription className="space-y-2 mt-2">
+              <p>Para iniciar o servidor do backend:</p>
+              <code className="block bg-muted p-2 rounded text-xs">npm run dev:server</code>
             </AlertDescription>
           </Alert>
           <Button 
