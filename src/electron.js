@@ -2,7 +2,6 @@
 const path = require('path');
 const { app, BrowserWindow, ipcMain } = require('electron');
 const isDev = require('electron-is-dev');
-const express = require('express');
 
 // Try to import the server conditionally to avoid errors
 let startServer;

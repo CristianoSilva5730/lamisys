@@ -1,4 +1,3 @@
-
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
@@ -509,7 +508,7 @@ function startServer() {
       res.json({ status: 'online' });
     });
     
-    // Serve static files from the dist directory in production
+    // Setting up static file serving...
     console.log('Setting up static file serving...');
     console.log('Current directory:', __dirname);
     console.log('Dist path:', path.join(__dirname, '../../dist'));
@@ -526,8 +525,8 @@ function startServer() {
     app.use(express.static(path.join(__dirname, '../../dist')));
     
     // For any non-API routes, serve the React app
-    // FIXED: The route pattern below was causing the path-to-regexp error
-    app.get('/*', (req, res) => {
+    // FIXED: Using a simple string path pattern instead of regex or complex pattern
+    app.get('*', (req, res) => {
       console.log('Requested path:', req.path);
       res.sendFile(path.join(__dirname, '../../dist/index.html'));
     });
