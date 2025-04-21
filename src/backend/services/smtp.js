@@ -5,44 +5,66 @@ const db = require('../database');
 class SMTPService {
   constructor() {
     this.transporter = null;
-    this.initializeTransporter();
+    // Initialize the transporter only if it's possible
+    try {
+      this.initializeTransporter();
+    } catch (error) {
+      console.error('Error initializing SMTP service:', error);
+    }
   }
 
   initializeTransporter() {
-    const config = db.getSMTPConfig();
-    if (!config) return;
-
-    this.transporter = nodemailer.createTransport({
-      host: config.server,
-      port: config.port,
-      secure: config.port === 465,
-      tls: {
-        rejectUnauthorized: false
+    try {
+      const config = db.getSMTPConfig();
+      if (!config) {
+        console.log('No SMTP configuration found, skipping transporter initialization');
+        return;
       }
-    });
+
+      this.transporter = nodemailer.createTransport({
+        host: config.server,
+        port: config.port,
+        secure: config.port === 465,
+        tls: {
+          rejectUnauthorized: false
+        }
+      });
+      
+      console.log(`SMTP transporter initialized: ${config.server}:${config.port}`);
+    } catch (error) {
+      console.error('Error initializing SMTP transporter:', error);
+    }
   }
 
   async sendEmail(options) {
     if (!this.transporter) {
-      this.initializeTransporter();
+      try {
+        this.initializeTransporter();
+      } catch (error) {
+        console.error('Failed to initialize transporter:', error);
+      }
     }
 
     if (!this.transporter) {
-      throw new Error('SMTP não configurado');
+      throw new Error('SMTP not configured');
     }
 
-    const config = db.getSMTPConfig();
-    const mailOptions = {
-      from: config.fromEmail,
-      ...options
-    };
-
     try {
+      const config = db.getSMTPConfig();
+      if (!config) {
+        throw new Error('SMTP configuration not found');
+      }
+      
+      const mailOptions = {
+        from: config.fromEmail,
+        ...options
+      };
+
       const info = await this.transporter.sendMail(mailOptions);
-      console.log('Email enviado:', info.messageId);
+      console.log('Email sent:', info.messageId);
       return true;
     } catch (error) {
-      console.error('Erro ao enviar email:', error);
+      console.error('Error sending email:', error);
       throw error;
     }
   }
@@ -76,4 +98,6 @@ class SMTPService {
   }
 }
 
-module.exports = new SMTPService();
+// Export a singleton instance
+const smtpService = new SMTPService();
+module.exports = smtpService;

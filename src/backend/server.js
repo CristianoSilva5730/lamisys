@@ -5,7 +5,7 @@ const db = require('./database');
 const bcrypt = require('bcryptjs');
 const smtpService = require('./services/smtp');
 
-// Criar o servidor Express
+// Create the Express server
 const app = express();
 
 // Middleware
@@ -13,7 +13,7 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Inicializar o banco de dados
+// Database reference
 let database;
 
 function generateRandomPassword(length = 10) {
@@ -26,26 +26,16 @@ function generateRandomPassword(length = 10) {
   return password;
 }
 
-// Servir build Vite em produção
-const isProduction = process.env.NODE_ENV === "production" || process.env.ELECTRON_IS_DEV === "false";
-if (isProduction) {
-  const distDir = path.join(__dirname, "../../dist"); // adapt path for monorepos if needed
-  app.use(express.static(distDir));
-  app.get("*", (req, res) => {
-    // redirect all frontend requests to index.html
-    res.sendFile(path.join(distDir, "index.html"));
-  });
-}
-
+// Define server startup function
 function startServer() {
   try {
-    // Inicializar o banco de dados
+    // Initialize the database
     database = db.initDatabase();
     
-    // Criar dados iniciais se necessário
+    // Create initial data if necessary
     db.seedDatabase();
     
-    console.log('Banco de dados inicializado com sucesso!');
+    console.log('Database initialized successfully!');
     
     // Rotas para gerenciamento de usuários
     app.get('/api/users', (req, res) => {
@@ -53,8 +43,8 @@ function startServer() {
         const users = db.getAllUsers();
         res.json(users);
       } catch (err) {
-        console.error('Erro ao buscar usuários:', err);
-        res.status(500).json({ error: 'Erro ao buscar usuários' });
+        console.error('Error ao buscar usuários:', err);
+        res.status(500).json({ error: 'Error ao buscar usuários' });
       }
     });
     
@@ -66,8 +56,8 @@ function startServer() {
         }
         res.json(user);
       } catch (err) {
-        console.error('Erro ao buscar usuário:', err);
-        res.status(500).json({ error: 'Erro ao buscar usuário' });
+        console.error('Error ao buscar usuário:', err);
+        res.status(500).json({ error: 'Error ao buscar usuário' });
       }
     });
     
@@ -94,8 +84,8 @@ function startServer() {
         const newUser = db.createUser(user);
         res.status(201).json(newUser);
       } catch (err) {
-        console.error('Erro ao criar usuário:', err);
-        res.status(500).json({ error: 'Erro ao criar usuário' });
+        console.error('Error ao criar usuário:', err);
+        res.status(500).json({ error: 'Error ao criar usuário' });
       }
     });
     
@@ -121,8 +111,8 @@ function startServer() {
         const updatedUser = db.updateUser(id, updates);
         res.json(updatedUser);
       } catch (err) {
-        console.error('Erro ao atualizar usuário:', err);
-        res.status(500).json({ error: 'Erro ao atualizar usuário' });
+        console.error('Error ao atualizar usuário:', err);
+        res.status(500).json({ error: 'Error ao atualizar usuário' });
       }
     });
     
@@ -139,8 +129,8 @@ function startServer() {
         const result = db.deleteUser(id);
         res.json({ success: result });
       } catch (err) {
-        console.error('Erro ao excluir usuário:', err);
-        res.status(500).json({ error: 'Erro ao excluir usuário' });
+        console.error('Error ao excluir usuário:', err);
+        res.status(500).json({ error: 'Error ao excluir usuário' });
       }
     });
     
@@ -149,36 +139,36 @@ function startServer() {
       try {
         const { email, password } = req.body;
         
-        console.log(`Tentativa de login: ${email}`);
+        console.log(`Attempt to login: ${email}`);
         
         if (!email || !password) {
-          return res.status(400).json({ error: 'Email e senha são obrigatórios' });
+          return res.status(400).json({ error: 'Email and password are required' });
         }
         
         const user = db.getUserByEmail(email);
         
         if (!user) {
-          console.log(`Usuário não encontrado: ${email}`);
-          return res.status(401).json({ error: 'Usuário ou senha incorretos' });
+          console.log(`User not found: ${email}`);
+          return res.status(401).json({ error: 'User or password incorrect' });
         }
         
-        console.log(`Usuário encontrado: ${user.name}, verificando senha`);
+        console.log(`User found: ${user.name}, verifying password`);
         
-        // Verificar senha do usuário
+        // Verify user's password
         const isFirstTimePassword = password === `${user.name}${user.matricula}`;
         const recoveryPasswordMatch = user.recoveryPassword && password === user.recoveryPassword;
         const correctPassword = isFirstTimePassword || recoveryPasswordMatch;
         
         if (!correctPassword) {
-          console.log('Senha incorreta');
-          return res.status(401).json({ error: 'Usuário ou senha incorretos' });
+          console.log('Password incorrect');
+          return res.status(401).json({ error: 'User or password incorrect' });
         }
         
-        console.log(`Login bem-sucedido para: ${user.name}`);
+        console.log(`Login successful for: ${user.name}`);
         
-        // Atualizar status de primeiro acesso se necessário
+        // Update first access status if necessary
         if (user.isFirstAccess && recoveryPasswordMatch) {
-          console.log(`Atualizando status de primeiro acesso para: ${user.id}`);
+          console.log(`Updating first access status for: ${user.id}`);
           db.updateUser(user.id, { ...user, isFirstAccess: 1 });
         }
         
@@ -187,8 +177,8 @@ function startServer() {
           isFirstAccess: isFirstTimePassword || recoveryPasswordMatch ? 1 : 0
         });
       } catch (err) {
-        console.error('Erro ao fazer login:', err);
-        res.status(500).json({ error: 'Erro ao fazer login' });
+        console.error('Error during login:', err);
+        res.status(500).json({ error: 'Error during login' });
       }
     });
     
@@ -198,43 +188,43 @@ function startServer() {
         const { email } = req.body;
         
         if (!email) {
-          return res.status(400).json({ error: 'Email é obrigatório' });
+          return res.status(400).json({ error: 'Email is required' });
         }
         
         const user = db.getUserByEmail(email);
         
         if (!user) {
-          return res.status(404).json({ error: 'Email não encontrado' });
+          return res.status(404).json({ error: 'Email not found' });
         }
         
-        // Gerar senha aleatória
+        // Generate random password
         const tempPassword = generateRandomPassword();
         
-        // Atualizar usuário com a nova senha temporária
+        // Update user with temporary password
         db.updateUser(user.id, { 
           ...user, 
           recoveryPassword: tempPassword,
           isFirstAccess: 1 
         });
         
-        // Em um app real, enviaria email com senha temporária
-        console.log(`Senha temporária para ${email}: ${tempPassword}`);
+        // In a real app, would send email with temporary password
+        console.log(`Temporary password for ${email}: ${tempPassword}`);
         
-        // Tentar enviar email se o SMTP estiver configurado
+        // Try sending email if SMTP is configured
         try {
           const smtpConfig = db.getSMTPConfig();
           if (smtpConfig && smtpConfig.server) {
             smtpService.sendPasswordResetEmail(email, tempPassword);
           }
         } catch (emailErr) {
-          console.error('Erro ao enviar email de recuperação de senha:', emailErr);
-          // Continuar mesmo se o email falhar
+          console.error('Error sending password reset email:', emailErr);
+          // Continue even if email fails
         }
         
-        res.json({ success: true, message: 'Senha redefinida com sucesso' });
+        res.json({ success: true, message: 'Password reset successfully' });
       } catch (err) {
-        console.error('Erro ao redefinir senha:', err);
-        res.status(500).json({ error: 'Erro ao redefinir senha' });
+        console.error('Error resetting password:', err);
+        res.status(500).json({ error: 'Error resetting password' });
       }
     });
     
@@ -244,32 +234,32 @@ function startServer() {
         const { userId, oldPassword, newPassword } = req.body;
         
         if (!userId || !oldPassword || !newPassword) {
-          return res.status(400).json({ error: 'Dados incompletos' });
+          return res.status(400).json({ error: 'Incomplete data' });
         }
         
         const user = db.getUserById(userId);
         
         if (!user) {
-          return res.status(404).json({ error: 'Usuário não encontrado' });
+          return res.status(404).json({ error: 'User not found' });
         }
         
-        // Verificar senha antiga
+        // Verify old password
         const isFirstTimePassword = oldPassword === `${user.name}${user.matricula}`;
         const recoveryPasswordMatch = user.recoveryPassword && oldPassword === user.recoveryPassword;
         const correctPassword = isFirstTimePassword || recoveryPasswordMatch;
         
         if (!correctPassword) {
-          return res.status(401).json({ error: 'Senha atual incorreta' });
+          return res.status(401).json({ error: 'Old password incorrect' });
         }
         
-        // Em um app real, armazenaria a senha (hash) no banco
-        // Aqui apenas atualizamos o status de primeiro acesso
+        // In a real app, would store password (hash) in database
+        // Here, only update first access status
         db.updateUser(user.id, { ...user, isFirstAccess: 0, recoveryPassword: null });
         
-        res.json({ success: true, message: 'Senha alterada com sucesso' });
+        res.json({ success: true, message: 'Password changed successfully' });
       } catch (err) {
-        console.error('Erro ao alterar senha:', err);
-        res.status(500).json({ error: 'Erro ao alterar senha' });
+        console.error('Error changing password:', err);
+        res.status(500).json({ error: 'Error changing password' });
       }
     });
     
@@ -280,8 +270,8 @@ function startServer() {
         const materials = db.getAllMaterials(includeDeleted);
         res.json(materials);
       } catch (err) {
-        console.error('Erro ao buscar materiais:', err);
-        res.status(500).json({ error: 'Erro ao buscar materiais' });
+        console.error('Error fetching materials:', err);
+        res.status(500).json({ error: 'Error fetching materials' });
       }
     });
     
@@ -290,8 +280,8 @@ function startServer() {
         const materials = db.getDeletedMaterials();
         res.json(materials);
       } catch (err) {
-        console.error('Erro ao buscar materiais excluídos:', err);
-        res.status(500).json({ error: 'Erro ao buscar materiais excluídos' });
+        console.error('Error fetching deleted materials:', err);
+        res.status(500).json({ error: 'Error fetching deleted materials' });
       }
     });
     
@@ -299,12 +289,12 @@ function startServer() {
       try {
         const material = db.getMaterialById(req.params.id);
         if (!material) {
-          return res.status(404).json({ error: 'Material não encontrado' });
+          return res.status(404).json({ error: 'Material not found' });
         }
         res.json(material);
       } catch (err) {
-        console.error('Erro ao buscar material:', err);
-        res.status(500).json({ error: 'Erro ao buscar material' });
+        console.error('Error fetching material:', err);
+        res.status(500).json({ error: 'Error fetching material' });
       }
     });
     
@@ -312,12 +302,12 @@ function startServer() {
       try {
         const material = req.body;
         
-        // Validar dados
+        // Validate data
         if (!material.notaFiscal || !material.numeroOrdem || !material.tipoMaterial || !material.status) {
-          return res.status(400).json({ error: 'Dados incompletos' });
+          return res.status(400).json({ error: 'Incomplete data' });
         }
         
-        // Adicionar dados de criação
+        // Add creation data
         if (!material.id) {
           material.id = Date.now().toString();
         }
@@ -328,8 +318,8 @@ function startServer() {
         const newMaterial = db.createMaterial(material);
         res.status(201).json(newMaterial);
       } catch (err) {
-        console.error('Erro ao criar material:', err);
-        res.status(500).json({ error: 'Erro ao criar material' });
+        console.error('Error creating material:', err);
+        res.status(500).json({ error: 'Error creating material' });
       }
     });
     
@@ -339,19 +329,19 @@ function startServer() {
         const { updatedBy, ...updates } = req.body;
         
         if (!updatedBy) {
-          return res.status(400).json({ error: 'ID do usuário que está atualizando é obrigatório' });
+          return res.status(400).json({ error: 'User ID is required' });
         }
         
         const updatedMaterial = db.updateMaterial(id, updates, updatedBy);
         
         if (!updatedMaterial) {
-          return res.status(404).json({ error: 'Material não encontrado' });
+          return res.status(404).json({ error: 'Material not found' });
         }
         
         res.json(updatedMaterial);
       } catch (err) {
-        console.error('Erro ao atualizar material:', err);
-        res.status(500).json({ error: 'Erro ao atualizar material' });
+        console.error('Error updating material:', err);
+        res.status(500).json({ error: 'Error updating material' });
       }
     });
     
@@ -360,19 +350,19 @@ function startServer() {
         const { reason, deletedBy } = req.body;
         
         if (!reason || !deletedBy) {
-          return res.status(400).json({ error: 'Motivo da exclusão e ID do usuário são obrigatórios' });
+          return res.status(400).json({ error: 'Reason and user ID are required' });
         }
         
         const result = db.deleteMaterial(req.params.id, reason, deletedBy);
         
         if (!result) {
-          return res.status(404).json({ error: 'Material não encontrado ou já excluído' });
+          return res.status(404).json({ error: 'Material not found or already deleted' });
         }
         
         res.json({ success: true });
       } catch (err) {
-        console.error('Erro ao excluir material:', err);
-        res.status(500).json({ error: 'Erro ao excluir material' });
+        console.error('Error deleting material:', err);
+        res.status(500).json({ error: 'Error deleting material' });
       }
     });
     
@@ -382,8 +372,8 @@ function startServer() {
         const alarms = db.getAllAlarms();
         res.json(alarms);
       } catch (err) {
-        console.error('Erro ao buscar alarmes:', err);
-        res.status(500).json({ error: 'Erro ao buscar alarmes' });
+        console.error('Error fetching alarms:', err);
+        res.status(500).json({ error: 'Error fetching alarms' });
       }
     });
     
@@ -391,12 +381,12 @@ function startServer() {
       try {
         const alarm = db.getAlarmById(req.params.id);
         if (!alarm) {
-          return res.status(404).json({ error: 'Alarme não encontrado' });
+          return res.status(404).json({ error: 'Alarm not found' });
         }
         res.json(alarm);
       } catch (err) {
-        console.error('Erro ao buscar alarme:', err);
-        res.status(500).json({ error: 'Erro ao buscar alarme' });
+        console.error('Error fetching alarm:', err);
+        res.status(500).json({ error: 'Error fetching alarm' });
       }
     });
     
@@ -404,12 +394,12 @@ function startServer() {
       try {
         const alarm = req.body;
         
-        // Validar dados
+        // Validate data
         if (!alarm.name || !alarm.type || !alarm.createdBy) {
-          return res.status(400).json({ error: 'Dados incompletos' });
+          return res.status(400).json({ error: 'Incomplete data' });
         }
         
-        // Adicionar dados de criação
+        // Add creation data
         if (!alarm.id) {
           alarm.id = Date.now().toString();
         }
@@ -420,8 +410,8 @@ function startServer() {
         const newAlarm = db.createAlarm(alarm);
         res.status(201).json(newAlarm);
       } catch (err) {
-        console.error('Erro ao criar alarme:', err);
-        res.status(500).json({ error: 'Erro ao criar alarme' });
+        console.error('Error creating alarm:', err);
+        res.status(500).json({ error: 'Error creating alarm' });
       }
     });
     
@@ -433,13 +423,13 @@ function startServer() {
         const updatedAlarm = db.updateAlarm(id, updates);
         
         if (!updatedAlarm) {
-          return res.status(404).json({ error: 'Alarme não encontrado' });
+          return res.status(404).json({ error: 'Alarm not found' });
         }
         
         res.json(updatedAlarm);
       } catch (err) {
-        console.error('Erro ao atualizar alarme:', err);
-        res.status(500).json({ error: 'Erro ao atualizar alarme' });
+        console.error('Error updating alarm:', err);
+        res.status(500).json({ error: 'Error updating alarm' });
       }
     });
     
@@ -448,13 +438,13 @@ function startServer() {
         const result = db.deleteAlarm(req.params.id);
         
         if (!result) {
-          return res.status(404).json({ error: 'Alarme não encontrado' });
+          return res.status(404).json({ error: 'Alarm not found' });
         }
         
         res.json({ success: true });
       } catch (err) {
-        console.error('Erro ao excluir alarme:', err);
-        res.status(500).json({ error: 'Erro ao excluir alarme' });
+        console.error('Error deleting alarm:', err);
+        res.status(500).json({ error: 'Error deleting alarm' });
       }
     });
     
@@ -464,8 +454,8 @@ function startServer() {
         const config = db.getSMTPConfig();
         res.json(config || { server: '', port: 25, fromEmail: '' });
       } catch (err) {
-        console.error('Erro ao buscar configuração SMTP:', err);
-        res.status(500).json({ error: 'Erro ao buscar configuração SMTP' });
+        console.error('Error fetching SMTP configuration:', err);
+        res.status(500).json({ error: 'Error fetching SMTP configuration' });
       }
     });
     
@@ -474,14 +464,14 @@ function startServer() {
         const config = req.body;
         
         if (!config.server || !config.port || !config.fromEmail) {
-          return res.status(400).json({ error: 'Dados incompletos' });
+          return res.status(400).json({ error: 'Incomplete data' });
         }
         
         const updatedConfig = db.updateSMTPConfig(config);
         res.json(updatedConfig);
       } catch (err) {
-        console.error('Erro ao atualizar configuração SMTP:', err);
-        res.status(500).json({ error: 'Erro ao atualizar configuração SMTP' });
+        console.error('Error updating SMTP configuration:', err);
+        res.status(500).json({ error: 'Error updating SMTP configuration' });
       }
     });
     
@@ -491,8 +481,8 @@ function startServer() {
         const backupData = await db.exportDatabase();
         res.json({ success: true, data: backupData });
       } catch (err) {
-        console.error('Erro ao fazer backup:', err);
-        res.status(500).json({ error: 'Erro ao fazer backup' });
+        console.error('Error making backup:', err);
+        res.status(500).json({ error: 'Error making backup' });
       }
     });
     
@@ -502,27 +492,28 @@ function startServer() {
         await db.importDatabase(data);
         res.json({ success: true });
       } catch (err) {
-        console.error('Erro ao restaurar backup:', err);
-        res.status(500).json({ error: 'Erro ao restaurar backup' });
+        console.error('Error restoring backup:', err);
+        res.status(500).json({ error: 'Error restoring backup' });
       }
     });
     
-    // Rota para verificar se o servidor está online
+    // Route to check if the server is online
     app.get('/api/status', (req, res) => {
       res.json({ status: 'online' });
     });
     
-    // Definir porta
+    // Define port
     const PORT = 8080;
     const HOST = "0.0.0.0";
-    app.listen(PORT, HOST, () => {
-      console.log(`Servidor rodando na porta ${PORT} (acessível pela LAN)`);
+    
+    // Return app without starting it, so we can test or extend it
+    return app.listen(PORT, HOST, () => {
+      console.log(`Server running on port ${PORT} (accessible on LAN)`);
     });
-    return app;
   } catch (err) {
-    console.error('Erro ao iniciar servidor:', err);
-    process.exit(1);
+    console.error('Error starting server:', err);
+    throw err;
   }
 }
 
-module.exports = { startServer };
+module.exports = { startServer, app };

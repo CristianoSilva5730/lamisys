@@ -26,7 +26,11 @@ waitOn({
     // Start Electron with the dev configuration
     const electronProcess = spawn(electronPath, [path.join(appPath, 'src/electron.js')], {
       stdio: 'inherit',
-      cwd: appPath
+      cwd: appPath,
+      env: {
+        ...process.env,
+        ELECTRON_IS_DEV: "true"
+      }
     });
 
     electronProcess.on('close', (code) => {

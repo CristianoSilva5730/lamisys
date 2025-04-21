@@ -1,20 +1,17 @@
+
 const path = require('path');
 const { app, BrowserWindow, ipcMain } = require('electron');
 const isDev = require('electron-is-dev');
-const serve = require('electron-serve');
 
-// Importar o servidor de forma condicional para evitar erros
+// Try to import the server conditionally to avoid errors
 let startServer;
 try {
   const server = require('./backend/server');
   startServer = server.startServer;
 } catch (error) {
-  console.error('Erro ao importar servidor:', error);
-  startServer = () => console.log('Servidor não inicializado');
+  console.error('Error importing server:', error);
+  startServer = () => console.log('Server not initialized');
 }
-
-// Carregar app a partir do build em produção
-const loadURL = serve({ directory: 'dist' });
 
 let mainWindow;
 
@@ -24,6 +21,24 @@ function getLocalUrl() {
   const PORT = 8080;
   // Optionally, detect actual LAN IP here if you want.
   return `http://localhost:${PORT}`;
+}
+
+// Function to serve static files in production
+function serveProductionFiles() {
+  const express = require('express');
+  const serveStatic = express.static(path.join(__dirname, '../dist'));
+  const app = express();
+  
+  app.use(serveStatic);
+  
+  // Serve index.html for all routes (SPA)
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, '../dist/index.html'));
+  });
+  
+  return app.listen(8080, '0.0.0.0', () => {
+    console.log('Static file server running at http://localhost:8080');
+  });
 }
 
 const createWindow = () => {
@@ -52,19 +67,30 @@ const createWindow = () => {
       return;
     }
     
-    // Aqui poderia perguntar ao usuário se deseja realmente sair
-    // Por enquanto, apenas fecha sem perguntar
+    // Here we could ask the user if they really want to exit
+    // For now, just close without asking
   });
 };
+
+// Static file server reference
+let staticServer;
 
 // When ready
 app.whenReady().then(() => {
   try {
+    // Start backend server if available
     startServer();
+    
+    // In production, start static file server
+    if (!isDev) {
+      staticServer = serveProductionFiles();
+    }
+    
     createWindow();
   } catch (error) {
-    console.error('Erro ao inicializar aplicação:', error);
+    console.error('Error initializing application:', error);
   }
+  
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
       createWindow();
@@ -79,5 +105,8 @@ app.on('window-all-closed', () => {
 });
 
 app.on('before-quit', () => {
-  console.log('Aplicação encerrando...');
+  console.log('Application shutting down...');
+  if (staticServer) {
+    staticServer.close();
+  }
 });

@@ -1,14 +1,26 @@
 const path = require('path');
 const fs = require('fs');
 const Database = require('better-sqlite3');
-const { app } = require('electron');
 
-// Determinar o diretório de dados da aplicação
+// Determine database directory without using electron app
 const getAppDataPath = () => {
-  const userDataPath = app.getPath('userData');
+  let userDataPath;
+  
+  // Try to get the app data path based on the platform
+  if (process.env.APPDATA) {
+    // Windows
+    userDataPath = path.join(process.env.APPDATA, 'lamisys');
+  } else if (process.platform === 'darwin') {
+    // macOS
+    userDataPath = path.join(process.env.HOME, 'Library', 'Application Support', 'lamisys');
+  } else {
+    // Linux and others
+    userDataPath = path.join(process.env.HOME, '.lamisys');
+  }
+  
   const dbFolder = path.join(userDataPath, 'database');
   
-  // Criar o diretório se não existir
+  // Create the directory if it doesn't exist
   if (!fs.existsSync(dbFolder)) {
     fs.mkdirSync(dbFolder, { recursive: true });
   }
@@ -16,25 +28,25 @@ const getAppDataPath = () => {
   return path.join(dbFolder, 'lamisys.db');
 };
 
-// Inicializar o banco de dados
+// Initialize the database
 let db;
 
 function initDatabase() {
   try {
     const dbPath = getAppDataPath();
-    console.log(`Inicializando banco de dados em: ${dbPath}`);
+    console.log(`Initializing database at: ${dbPath}`);
     
     db = new Database(dbPath);
     
-    // Habilitar chaves estrangeiras
+    // Enable foreign keys
     db.pragma('foreign_keys = ON');
     
-    // Criar tabelas se não existirem
+    // Create tables if they don't exist
     createTables();
     
     return db;
   } catch (err) {
-    console.error('Erro ao inicializar banco de dados:', err.message);
+    console.error('Error initializing database:', err.message);
     throw err;
   }
 }
@@ -606,25 +618,37 @@ function deleteAlarm(id) {
 
 // Funções para configuração SMTP
 function getSMTPConfig() {
+  // Check if db is initialized before trying to use it
+  if (!db) {
+    console.warn('Database not initialized when getting SMTP config.');
+    return null;
+  }
+  
   return db.prepare('SELECT * FROM smtp_config WHERE id = 1').get();
 }
 
 function updateSMTPConfig(config) {
+  // Check if db is initialized
+  if (!db) {
+    console.warn('Database not initialized when updating SMTP config.');
+    throw new Error('Database not initialized');
+  }
+  
   const { server, port, fromEmail } = config;
   
   try {
-    // Verificar se já existe uma configuração
+    // Check if a configuration already exists
     const exists = getSMTPConfig();
     
     if (exists) {
-      // Atualizar configuração existente
+      // Update existing configuration
       db.prepare(`
         UPDATE smtp_config
         SET server = ?, port = ?, fromEmail = ?, updated_at = CURRENT_TIMESTAMP
         WHERE id = 1
       `).run(server, port, fromEmail);
     } else {
-      // Inserir nova configuração
+      // Insert new configuration
       db.prepare(`
         INSERT INTO smtp_config (id, server, port, fromEmail)
         VALUES (1, ?, ?, ?)
@@ -633,7 +657,7 @@ function updateSMTPConfig(config) {
     
     return getSMTPConfig();
   } catch (err) {
-    console.error('Erro ao atualizar configuração SMTP:', err.message);
+    console.error('Error updating SMTP configuration:', err.message);
     throw err;
   }
 }
