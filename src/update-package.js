@@ -18,7 +18,9 @@ packageJson.scripts = {
   "preview": "vite preview",
   "electron:dev": "node src/electron-dev.js",
   "electron:start": "node src/electron-start.js",
-  "start": "npm run build && node src/electron-start.js"
+  "start": "npm run build && node src/electron-start.js",
+  "git:sync": "node src/git-sync.js",
+  "git:push": "node src/git-sync.js push"
 };
 
 // Write the updated package.json
