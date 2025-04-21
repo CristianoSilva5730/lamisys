@@ -1,3 +1,4 @@
+
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
@@ -30,12 +31,18 @@ function generateRandomPassword(length = 10) {
 function startServer() {
   try {
     // Initialize the database
-    database = db.initDatabase();
+    try {
+      database = db.initDatabase();
+      // Create initial data if necessary
+      db.seedDatabase();
+      console.log('Database initialized successfully!');
+    } catch (err) {
+      console.error('Database initialization error:', err);
+      // Continue even if database fails - we'll handle errors at the API level
+    }
     
-    // Create initial data if necessary
-    db.seedDatabase();
-    
-    console.log('Database initialized successfully!');
+    // API Routes
+    // Prefix all API routes with /api
     
     // Rotas para gerenciamento de usuários
     app.get('/api/users', (req, res) => {
@@ -501,6 +508,18 @@ function startServer() {
     app.get('/api/status', (req, res) => {
       res.json({ status: 'online' });
     });
+    
+    // Serve static files from the dist directory in production
+    const isProduction = process.env.NODE_ENV === 'production';
+    if (isProduction) {
+      // Serve static assets
+      app.use(express.static(path.join(__dirname, '../../dist')));
+      
+      // Serve index.html for any request not matching an API route
+      app.get('*', (req, res) => {
+        res.sendFile(path.join(__dirname, '../../dist/index.html'));
+      });
+    }
     
     // Define port
     const PORT = 8080;
