@@ -43,7 +43,7 @@ function startServer() {
     // API Routes
     // Prefix all API routes with /api
     
-    // Rotas para gerenciamento de usuários
+    // User management routes
     app.get('/api/users', (req, res) => {
       try {
         const users = db.getAllUsers();
@@ -140,7 +140,7 @@ function startServer() {
       }
     });
     
-    // Rota para autenticação
+    // Authentication route
     app.post('/api/login', (req, res) => {
       try {
         const { email, password } = req.body;
@@ -188,7 +188,7 @@ function startServer() {
       }
     });
     
-    // Rota para redefinir senha
+    // Password reset route
     app.post('/api/reset-password', (req, res) => {
       try {
         const { email } = req.body;
@@ -234,7 +234,7 @@ function startServer() {
       }
     });
     
-    // Rota para alterar senha
+    // Change password route
     app.post('/api/change-password', (req, res) => {
       try {
         const { userId, oldPassword, newPassword } = req.body;
@@ -269,7 +269,7 @@ function startServer() {
       }
     });
     
-    // Rotas para gerenciamento de materiais
+    // Material management routes
     app.get('/api/materials', (req, res) => {
       try {
         const includeDeleted = req.query.includeDeleted === 'true';
@@ -372,7 +372,7 @@ function startServer() {
       }
     });
     
-    // Rotas para gerenciamento de alarmes
+    // Alarm management routes
     app.get('/api/alarms', (req, res) => {
       try {
         const alarms = db.getAllAlarms();
@@ -519,15 +519,17 @@ function startServer() {
       console.error('Warning: Dist directory does not exist!');
     }
     
-    // Set up API routes first
-    
-    // Then serve static assets - make sure this comes AFTER API routes
+    // Serve static files
     app.use(express.static(path.join(__dirname, '../../dist')));
     
-    // For any non-API routes, serve the React app
-    // FIXED: Using a simple string path pattern instead of regex or complex pattern
-    app.get('*', (req, res) => {
-      console.log('Requested path:', req.path);
+    // Important: This is our catch-all route for the SPA
+    // No complex patterns - just use a simple string
+    app.get('/', (req, res) => {
+      res.sendFile(path.join(__dirname, '../../dist/index.html'));
+    });
+    
+    // Handle all other routes for the SPA
+    app.use((req, res) => {
       res.sendFile(path.join(__dirname, '../../dist/index.html'));
     });
     
