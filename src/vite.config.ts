@@ -11,31 +11,13 @@ export default defineConfig(({ mode }) => ({
   },
   plugins: [
     react(),
-    // Completamente remover o componentTagger no build de produção
-    // e tentar importá-lo de forma dinâmica apenas em desenvolvimento
-    mode === 'development' && (() => {
-      if (process.env.NODE_ENV === 'production') return null;
-      
-      try {
-        // Importar usando dynamic import para lidar com ESM
-        return {
-          name: 'lovable-tagger-wrapper',
-          async buildStart() {
-            try {
-              // Não importar durante o build
-              if (process.env.NODE_ENV !== 'production') {
-                console.log('Ambiente de desenvolvimento, lovable-tagger será importado em runtime');
-              }
-            } catch (error) {
-              console.warn('lovable-tagger não disponível:', (error as Error).message);
-            }
-          }
-        };
-      } catch (error) {
-        console.warn('Erro ao configurar lovable-tagger:', (error as Error).message);
-        return null;
+    // Simplified plugin approach that doesn't try to import lovable-tagger
+    mode === 'development' && {
+      name: 'dev-only-plugin',
+      buildStart() {
+        console.log('Development build started');
       }
-    })(),
+    }
   ].filter(Boolean),
   resolve: {
     alias: {
@@ -45,14 +27,11 @@ export default defineConfig(({ mode }) => ({
   // Configurações para compatibilidade com Electron
   build: {
     outDir: 'dist',
-    minify: 'esbuild', // Atualizando para usar esbuild em vez de terser
-    // Configurações adicionais para evitar problemas com ESM
+    minify: 'esbuild',
     commonjsOptions: {
       transformMixedEsModules: true,
     },
-    // Aumentar limite de aviso de tamanho de chunk para evitar avisos
     chunkSizeWarningLimit: 1000,
-    // Configuração manual de chunks para melhorar a divisão de código
     rollupOptions: {
       output: {
         manualChunks: {

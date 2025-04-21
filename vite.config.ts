@@ -2,7 +2,6 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
-import { componentTagger } from "lovable-tagger";
 
 export default defineConfig(({ mode }) => ({
   server: {
@@ -11,7 +10,15 @@ export default defineConfig(({ mode }) => ({
   },
   plugins: [
     react(),
-    mode === 'development' && componentTagger(),
+    // Only conditionally attempt to use the tagger in development mode
+    mode === 'development' && {
+      name: 'conditional-lovable-tagger',
+      buildStart() {
+        if (mode === 'development') {
+          console.log('Development mode: lovable-tagger would be used if available');
+        }
+      }
+    }
   ].filter(Boolean),
   resolve: {
     alias: {

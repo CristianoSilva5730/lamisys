@@ -19,13 +19,32 @@ if (!fs.existsSync(distPath)) {
   process.exit(1);
 }
 
-// Run electron with the main script
-const electronProcess = spawn(electronPath, [path.join(appPath, 'src/electron.js')], {
+// Start the backend server first
+const serverProcess = spawn('node', [path.join(appPath, 'src/backend/server.js')], {
   stdio: 'inherit',
   cwd: appPath
 });
 
-electronProcess.on('close', (code) => {
-  console.log(`Electron process exited with code ${code}`);
-  process.exit(code);
-});
+// Wait for the server to start
+setTimeout(() => {
+  console.log('Backend server should be ready, starting Electron...');
+  
+  // Start Electron with the main script
+  const electronProcess = spawn(electronPath, [path.join(appPath, 'src/electron.js')], {
+    stdio: 'inherit',
+    cwd: appPath
+  });
+
+  electronProcess.on('close', (code) => {
+    console.log(`Electron process exited with code ${code}`);
+    serverProcess.kill();
+    process.exit(code);
+  });
+
+  // Handle Ctrl+C to properly close all processes
+  process.on('SIGINT', () => {
+    electronProcess.kill();
+    serverProcess.kill();
+    process.exit(0);
+  });
+}, 2000); // Wait 2 seconds for server to start
