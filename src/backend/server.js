@@ -1,4 +1,3 @@
-
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
@@ -510,16 +509,24 @@ function startServer() {
     });
     
     // Serve static files from the dist directory in production
-    const isProduction = process.env.NODE_ENV === 'production';
-    if (isProduction) {
-      // Serve static assets
-      app.use(express.static(path.join(__dirname, '../../dist')));
-      
-      // Serve index.html for any request not matching an API route
-      app.get('*', (req, res) => {
-        res.sendFile(path.join(__dirname, '../../dist/index.html'));
-      });
+    console.log('Setting up static file serving...');
+    console.log('Current directory:', __dirname);
+    console.log('Dist path:', path.join(__dirname, '../../dist'));
+    
+    // Check if dist directory exists
+    const fs = require('fs');
+    if (!fs.existsSync(path.join(__dirname, '../../dist'))) {
+      console.error('Warning: Dist directory does not exist!');
     }
+    
+    // Serve static assets
+    app.use(express.static(path.join(__dirname, '../../dist')));
+    
+    // Serve index.html for any request not matching an API route
+    app.get('*', (req, res) => {
+      console.log('Requested path:', req.path);
+      res.sendFile(path.join(__dirname, '../../dist/index.html'));
+    });
     
     // Define port
     const PORT = 8080;

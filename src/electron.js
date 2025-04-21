@@ -2,6 +2,7 @@
 const path = require('path');
 const { app, BrowserWindow, ipcMain } = require('electron');
 const isDev = require('electron-is-dev');
+const express = require('express');
 
 // Try to import the server conditionally to avoid errors
 let startServer;
@@ -26,12 +27,12 @@ function getLocalUrl() {
 // Function to serve static files in production
 function serveProductionFiles() {
   const express = require('express');
-  const serveStatic = express.static(path.join(__dirname, '../dist'));
   const app = express();
   
-  app.use(serveStatic);
+  // Serve static files from the dist directory
+  app.use(express.static(path.join(__dirname, '../dist')));
   
-  // Serve index.html for all routes (SPA)
+  // Serve index.html for any request not matching an API route
   app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, '../dist/index.html'));
   });
@@ -79,12 +80,10 @@ let staticServer;
 app.whenReady().then(() => {
   try {
     // Start backend server if available
-    startServer();
-    
-    // In production, start static file server
     if (!isDev) {
-      staticServer = serveProductionFiles();
+      process.env.NODE_ENV = 'production';
     }
+    startServer();
     
     createWindow();
   } catch (error) {

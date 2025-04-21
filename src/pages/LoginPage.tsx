@@ -1,3 +1,4 @@
+
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { LoginForm } from "@/components/auth/LoginForm";
@@ -7,12 +8,12 @@ import { Logo } from "@/components/layout/Logo";
 export default function LoginPage() {
   const { isAuthenticated, user } = useAuth();
   
-  // Redirecionar para a mudança de senha se for primeiro acesso
+  // Redirect to password change if first access
   if (isAuthenticated && user?.isFirstAccess) {
     return <Navigate to="/mudar-senha" />;
   }
   
-  // Redirecionar para a página inicial se já estiver autenticado
+  // Redirect to home page if already authenticated
   if (isAuthenticated) {
     return <Navigate to="/" />;
   }
