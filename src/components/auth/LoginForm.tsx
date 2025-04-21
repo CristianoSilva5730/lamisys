@@ -6,8 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Info } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { toast } from "@/components/ui/use-toast";
 
 export function LoginForm() {
   const [email, setEmail] = useState("");
@@ -22,10 +23,35 @@ export function LoginForm() {
     setError("");
     
     try {
+      // Validação básica
+      if (!email || !password) {
+        setError("Por favor, preencha todos os campos");
+        return;
+      }
+      
+      console.log("Tentando login com:", email, "senha:", "*".repeat(password.length));
       await login(email, password);
+      console.log("Login bem-sucedido");
     } catch (err: any) {
-      // Já tratado no contexto de autenticação
-      setError(err.response?.data?.error || "Erro ao fazer login");
+      console.error("Erro no login:", err);
+      
+      let errorMessage = "Erro ao fazer login. Tente novamente.";
+      
+      if (err.message && err.message.includes("network")) {
+        errorMessage = "Erro de conexão com o servidor. Verifique se o servidor está rodando.";
+      } else if (err.response?.data?.error) {
+        errorMessage = err.response.data.error;
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
+      setError(errorMessage);
+      
+      toast({
+        variant: "destructive",
+        title: "Erro de Login",
+        description: errorMessage,
+      });
     }
   };
 
@@ -73,10 +99,13 @@ export function LoginForm() {
               disabled={isLoading}
             />
           </div>
-          <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            <p>Para primeiro acesso, use a senha: [seu nome][sua matrícula]</p>
-            <p>Ex: Admin000001</p>
-          </div>
+          <Alert className="mt-2 bg-blue-50 border-blue-200 text-blue-800 dark:bg-blue-900/30 dark:border-blue-800 dark:text-blue-300">
+            <Info className="h-4 w-4" />
+            <AlertDescription>
+              Para primeiro acesso, use a senha: [seu nome][sua matrícula]<br />
+              Ex: <strong>Admin000001</strong>
+            </AlertDescription>
+          </Alert>
           <Button 
             type="submit" 
             className="w-full" 

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertCircle, AlertTriangle, CheckCircle } from "lucide-react";
+import { AlertCircle, AlertTriangle, CheckCircle, Info } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { toast } from "@/components/ui/use-toast";
 
@@ -26,6 +26,13 @@ export function ResetPasswordForm() {
     setIsLoading(true);
     
     try {
+      if (!email) {
+        setError("Por favor, informe seu e-mail");
+        setIsLoading(false);
+        return;
+      }
+      
+      console.log("Tentando recuperar senha para:", email);
       await resetPassword(email);
       setSuccess(true);
       
@@ -40,7 +47,9 @@ export function ResetPasswordForm() {
       // Garantir que o erro seja tratado corretamente, independente do formato
       let errorMessage = "Erro ao recuperar senha. Tente novamente.";
       
-      if (err.response?.data?.error) {
+      if (err.message && err.message.includes("network")) {
+        errorMessage = "Erro de conexão com o servidor. Verifique se o servidor está rodando.";
+      } else if (err.response?.data?.error) {
         errorMessage = err.response.data.error;
       } else if (err instanceof Error) {
         errorMessage = err.message;
@@ -49,6 +58,12 @@ export function ResetPasswordForm() {
       }
       
       setError(errorMessage);
+      
+      toast({
+        variant: "destructive",
+        title: "Erro ao recuperar senha",
+        description: errorMessage,
+      });
     } finally {
       setIsLoading(false);
     }
@@ -87,6 +102,13 @@ export function ResetPasswordForm() {
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
             Você receberá uma senha temporária que deverá ser alterada no primeiro acesso.
+          </AlertDescription>
+        </Alert>
+        
+        <Alert className="mb-4 bg-blue-50 border-blue-200 text-blue-800 dark:bg-blue-900/30 dark:border-blue-800 dark:text-blue-300">
+          <Info className="h-4 w-4" />
+          <AlertDescription>
+            <strong>Nota:</strong> Em ambiente de desenvolvimento, a senha temporária aparecerá no console do servidor.
           </AlertDescription>
         </Alert>
         

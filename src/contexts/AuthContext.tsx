@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useEffect, useState } from "react";
 import { User, UserRole } from "@/lib/types";
 import { authAPI } from "@/services/api";
@@ -48,6 +49,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       console.log("Tentando login com:", email);
       
+      // Tentar fazer login com a API
       const userData = await authAPI.login(email, password);
       
       if (!userData || !userData.id) {
@@ -58,6 +60,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         ...userData,
         isFirstAccess: userData.isFirstAccess === 1
       };
+      
+      console.log("Usuário autenticado:", authenticatedUser);
       
       setUser(authenticatedUser);
       localStorage.setItem("lamisys-user", JSON.stringify(authenticatedUser));
@@ -73,12 +77,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (error: any) {
       console.error("Erro no login:", error);
       
-      // Usar toast para mensagens de erro
-      toast({
-        title: "Erro de Login",
-        description: error.response?.data?.error || "Erro ao fazer login",
-        variant: "destructive"
-      });
+      // Tratar erro de conexão com o servidor
+      if (error.message === "Network Error" || !error.response) {
+        throw new Error("Erro de conexão com o servidor. Verifique se o servidor está rodando.");
+      }
       
       throw error;
     } finally {
@@ -89,25 +91,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = () => {
     setUser(null);
     localStorage.removeItem("lamisys-user");
+    navigate("/login");
   };
 
   const resetPassword = async (email: string) => {
     setIsLoading(true);
     
     try {
+      console.log("Tentando redefinir senha para:", email);
       // Usar a API para resetar a senha
       await authAPI.resetPassword(email);
+      
+      console.log("Senha redefinida com sucesso");
       
       toast({
         title: "Senha redefinida",
         description: "Uma nova senha foi enviada para o seu email.",
       });
-      
-      setIsLoading(false);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao redefinir senha:", error);
-      setIsLoading(false);
+      
+      // Tratar erro de conexão com o servidor
+      if (error.message === "Network Error" || !error.response) {
+        throw new Error("Erro de conexão com o servidor. Verifique se o servidor está rodando.");
+      }
+      
       throw error;
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -136,12 +147,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         title: "Senha alterada",
         description: "Sua senha foi alterada com sucesso.",
       });
-      
-      setIsLoading(false);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao alterar senha:", error);
-      setIsLoading(false);
+      
+      // Tratar erro de conexão com o servidor
+      if (error.message === "Network Error" || !error.response) {
+        throw new Error("Erro de conexão com o servidor. Verifique se o servidor está rodando.");
+      }
+      
       throw error;
+    } finally {
+      setIsLoading(false);
     }
   };
 
