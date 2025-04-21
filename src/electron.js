@@ -1,4 +1,3 @@
-
 const path = require('path');
 const { app, BrowserWindow, ipcMain } = require('electron');
 const isDev = require('electron-is-dev');
@@ -17,9 +16,18 @@ try {
 // Carregar app a partir do build em produção
 const loadURL = serve({ directory: 'dist' });
 
-// Cria a janela principal
+let mainWindow;
+
+// Helper to detect LAN IP for production (fallback to localhost)
+function getLocalUrl() {
+  // Production is always at http://localhost:8080 or LAN IP.
+  const PORT = 8080;
+  // Optionally, detect actual LAN IP here if you want.
+  return `http://localhost:${PORT}`;
+}
+
 const createWindow = () => {
-  const mainWindow = new BrowserWindow({
+  mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
     webPreferences: {
@@ -30,22 +38,14 @@ const createWindow = () => {
     icon: path.join(__dirname, '../public/favicon.ico')
   });
 
-  // Em desenvolvimento, carrega a URL local de desenvolvimento
-  // Em produção, carrega o app com electron-serve
   if (isDev) {
     mainWindow.loadURL('http://localhost:8080');
-    // Abrir o DevTools automaticamente em desenvolvimento
     mainWindow.webContents.openDevTools();
   } else {
-    try {
-      loadURL(mainWindow);
-    } catch (error) {
-      console.error('Erro ao carregar URL:', error);
-      mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
-    }
+    // Always launch from local express server (LAN-available)
+    mainWindow.loadURL(getLocalUrl());
   }
 
-  // Impedir fechamento da janela em ações específicas
   mainWindow.on('close', (e) => {
     if (isDev) {
       app.quit();
@@ -57,19 +57,14 @@ const createWindow = () => {
   });
 };
 
-// Quando o Electron estiver pronto
+// When ready
 app.whenReady().then(() => {
   try {
-    // Iniciar o servidor Express
     startServer();
-    
-    // Criar a janela principal
     createWindow();
   } catch (error) {
     console.error('Erro ao inicializar aplicação:', error);
   }
-
-  // No macOS, é comum recriar uma janela quando o ícone do dock é clicado
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
       createWindow();
@@ -77,15 +72,12 @@ app.whenReady().then(() => {
   });
 });
 
-// Sair quando todas as janelas são fechadas, exceto no macOS
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit();
   }
 });
 
-// Fechar adequadamente em macOS
 app.on('before-quit', () => {
-  // Aqui poderíamos realizar operações de limpeza antes de sair
   console.log('Aplicação encerrando...');
 });

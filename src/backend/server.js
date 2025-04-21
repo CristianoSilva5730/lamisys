@@ -26,6 +26,17 @@ function generateRandomPassword(length = 10) {
   return password;
 }
 
+// Servir build Vite em produção
+const isProduction = process.env.NODE_ENV === "production" || process.env.ELECTRON_IS_DEV === "false";
+if (isProduction) {
+  const distDir = path.join(__dirname, "../../dist"); // adapt path for monorepos if needed
+  app.use(express.static(distDir));
+  app.get("*", (req, res) => {
+    // redirect all frontend requests to index.html
+    res.sendFile(path.join(distDir, "index.html"));
+  });
+}
+
 function startServer() {
   try {
     // Inicializar o banco de dados
@@ -502,11 +513,11 @@ function startServer() {
     });
     
     // Definir porta
-    const PORT = 3000;
-    app.listen(PORT, () => {
-      console.log(`Servidor rodando na porta ${PORT}`);
+    const PORT = 8080;
+    const HOST = "0.0.0.0";
+    app.listen(PORT, HOST, () => {
+      console.log(`Servidor rodando na porta ${PORT} (acessível pela LAN)`);
     });
-    
     return app;
   } catch (err) {
     console.error('Erro ao iniciar servidor:', err);
