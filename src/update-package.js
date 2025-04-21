@@ -1,6 +1,5 @@
 
-#!/usr/bin/env node
-
+// Read the current package.json
 const fs = require('fs');
 const path = require('path');
 
