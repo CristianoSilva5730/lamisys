@@ -1,3 +1,4 @@
+
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
@@ -519,11 +520,14 @@ function startServer() {
       console.error('Warning: Dist directory does not exist!');
     }
     
-    // Serve static assets
+    // Set up API routes first
+    
+    // Then serve static assets - make sure this comes AFTER API routes
     app.use(express.static(path.join(__dirname, '../../dist')));
     
-    // Serve index.html for any request not matching an API route
-    app.get('*', (req, res) => {
+    // For any non-API routes, serve the React app
+    // FIXED: The route pattern below was causing the path-to-regexp error
+    app.get('/*', (req, res) => {
       console.log('Requested path:', req.path);
       res.sendFile(path.join(__dirname, '../../dist/index.html'));
     });

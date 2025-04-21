@@ -24,23 +24,26 @@ function getLocalUrl() {
   return `http://localhost:${PORT}`;
 }
 
-// Function to serve static files in production
-function serveProductionFiles() {
-  const express = require('express');
-  const app = express();
+// When ready
+app.whenReady().then(() => {
+  try {
+    // Start backend server if available
+    if (!isDev) {
+      process.env.NODE_ENV = 'production';
+    }
+    startServer();
+    
+    createWindow();
+  } catch (error) {
+    console.error('Error initializing application:', error);
+  }
   
-  // Serve static files from the dist directory
-  app.use(express.static(path.join(__dirname, '../dist')));
-  
-  // Serve index.html for any request not matching an API route
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, '../dist/index.html'));
+  app.on('activate', () => {
+    if (BrowserWindow.getAllWindows().length === 0) {
+      createWindow();
+    }
   });
-  
-  return app.listen(8080, '0.0.0.0', () => {
-    console.log('Static file server running at http://localhost:8080');
-  });
-}
+});
 
 const createWindow = () => {
   mainWindow = new BrowserWindow({
@@ -73,30 +76,6 @@ const createWindow = () => {
   });
 };
 
-// Static file server reference
-let staticServer;
-
-// When ready
-app.whenReady().then(() => {
-  try {
-    // Start backend server if available
-    if (!isDev) {
-      process.env.NODE_ENV = 'production';
-    }
-    startServer();
-    
-    createWindow();
-  } catch (error) {
-    console.error('Error initializing application:', error);
-  }
-  
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
-      createWindow();
-    }
-  });
-});
-
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit();
@@ -105,7 +84,4 @@ app.on('window-all-closed', () => {
 
 app.on('before-quit', () => {
   console.log('Application shutting down...');
-  if (staticServer) {
-    staticServer.close();
-  }
 });
