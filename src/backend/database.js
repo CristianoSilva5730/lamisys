@@ -1,6 +1,9 @@
 const path = require('path');
 const fs = require('fs');
 const Database = require('better-sqlite3');
+// Inicializa a conexão com o banco
+// // const db = new Database('lamisys.db'); // ou o nome correto do seu arquivo .db
+
 
 // Determine database directory without using electron app
 const getAppDataPath = () => {
@@ -29,7 +32,7 @@ const getAppDataPath = () => {
 };
 
 // Initialize the database
-let db;
+
 
 function initDatabase() {
   try {
@@ -61,6 +64,7 @@ function createTables() {
       matricula TEXT UNIQUE NOT NULL,
       role TEXT NOT NULL,
       avatar TEXT,
+      password TEXT,
       isFirstAccess INTEGER DEFAULT 1,
       recoveryPassword TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP

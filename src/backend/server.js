@@ -1,3 +1,4 @@
+
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
@@ -139,45 +140,47 @@ function startServer() {
         res.status(500).json({ error: 'Error ao excluir usuário' });
       }
     });
-    
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////    
     // Authentication route
     app.post('/api/login', (req, res) => {
       try {
         const { email, password } = req.body;
-        
+    
         console.log(`Attempt to login: ${email}`);
-        
+    
         if (!email || !password) {
           return res.status(400).json({ error: 'Email and password are required' });
         }
-        
+    
         const user = db.getUserByEmail(email);
-        
+    
         if (!user) {
           console.log(`User not found: ${email}`);
           return res.status(401).json({ error: 'User or password incorrect' });
         }
-        
+    
         console.log(`User found: ${user.name}, verifying password`);
-        
-        // Verify user's password
-        const isFirstTimePassword = password === `${user.name}${user.matricula}`;
+    
+        // Verifica senha principal, senha de primeiro acesso e senha de recuperação
+        const isFirstTimePassword = !user.password && password === `${user.name}${user.matricula}`;
         const recoveryPasswordMatch = user.recoveryPassword && password === user.recoveryPassword;
-        const correctPassword = isFirstTimePassword || recoveryPasswordMatch;
-        
+        const mainPasswordMatch = user.password && password === user.password;
+    
+        const correctPassword = isFirstTimePassword || recoveryPasswordMatch || mainPasswordMatch;
+    
         if (!correctPassword) {
           console.log('Password incorrect');
           return res.status(401).json({ error: 'User or password incorrect' });
         }
-        
+    
         console.log(`Login successful for: ${user.name}`);
-        
-        // Update first access status if necessary
-        if (user.isFirstAccess && recoveryPasswordMatch) {
+    
+        // Atualiza o status de primeiro acesso, se necessário
+        if ((isFirstTimePassword || recoveryPasswordMatch) && user.isFirstAccess !== 1) {
           console.log(`Updating first access status for: ${user.id}`);
           db.updateUser(user.id, { ...user, isFirstAccess: 1 });
         }
-        
+    
         res.json({
           ...user,
           isFirstAccess: isFirstTimePassword || recoveryPasswordMatch ? 1 : 0
@@ -238,37 +241,43 @@ function startServer() {
     app.post('/api/change-password', (req, res) => {
       try {
         const { userId, oldPassword, newPassword } = req.body;
-        
+    
         if (!userId || !oldPassword || !newPassword) {
           return res.status(400).json({ error: 'Incomplete data' });
         }
-        
+    
         const user = db.getUserById(userId);
-        
+    
         if (!user) {
           return res.status(404).json({ error: 'User not found' });
         }
-        
-        // Verify old password
-        const isFirstTimePassword = oldPassword === `${user.name}${user.matricula}`;
+    
+        // Verifica se a senha antiga está correta
+        const isFirstTimePassword = !user.password && oldPassword === `${user.name}${user.matricula}`;
         const recoveryPasswordMatch = user.recoveryPassword && oldPassword === user.recoveryPassword;
-        const correctPassword = isFirstTimePassword || recoveryPasswordMatch;
-        
+        const mainPasswordMatch = user.password && oldPassword === user.password;
+    
+        const correctPassword = isFirstTimePassword || recoveryPasswordMatch || mainPasswordMatch;
+    
         if (!correctPassword) {
           return res.status(401).json({ error: 'Old password incorrect' });
         }
-        
-        // In a real app, would store password (hash) in database
-        // Here, only update first access status
-        db.updateUser(user.id, { ...user, isFirstAccess: 0, recoveryPassword: null });
-        
+    
+        // Atualiza a senha principal e reseta a de recuperação
+        db.updateUser(user.id, {
+          ...user,
+          password: newPassword,
+          isFirstAccess: 0,
+          recoveryPassword: null
+        });
+    
         res.json({ success: true, message: 'Password changed successfully' });
       } catch (err) {
         console.error('Error changing password:', err);
         res.status(500).json({ error: 'Error changing password' });
       }
     });
-    
+ ////////////////////////////////////////////////////////////////////////////////////////////////////////////////   
     // Material management routes
     app.get('/api/materials', (req, res) => {
       try {

@@ -14,7 +14,7 @@ const getBaseUrl = () => {
   }
   
   // Default for Electron app
-  return 'http://localhost:3000/api';
+  return 'http://localhost:8080/api';
 };
 
 const baseURL = getBaseUrl();
