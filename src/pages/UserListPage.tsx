@@ -26,11 +26,13 @@ import {
 } from "@/components/ui/select";
 import { User, UserRole } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
-import { getAllUsers, createUser, updateUser as updateUserInDb, deleteUser as deleteUserInDb } from "@/lib/database";
+import { userAPI } from "@/services/api";
+import { authAPI } from "@/services/api";
 
 export default function UserListPage() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState<User[]>([]);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -44,29 +46,52 @@ export default function UserListPage() {
   });
   
   const canManageUsers = hasPermission(user, PERMISSIONS.VIEW_EDIT_USERS);
-  
+  //// Carregar usuarios
   useEffect(() => {
     if (canManageUsers) {
-      // Carregar usuários do banco de dados local
-      const loadUsers = () => {
+      const loadUsers = async () => {
         try {
-          const dbUsers = getAllUsers();
-          setUsers(dbUsers);
+          setLoading(true);
+          console.log("Carregando usuários do banco de dados");
+          const data = await userAPI.getAll();
+          console.log("Usuários carregados:", data);
+          setUsers(data);
         } catch (error) {
           console.error("Erro ao carregar usuários:", error);
           toast({
+            variant: "destructive",
             title: "Erro",
-            description: "Não foi possível carregar a lista de usuários",
-            variant: "destructive"
+            description: "Não foi possível carregar a lista de usuários.",
           });
+        } finally {
+          setLoading(false);
         }
       };
-      
+  
       loadUsers();
     }
   }, [canManageUsers, toast]);
+
+  const loadUsers = async () => {
+    try {
+      setLoading(true);
+      console.log("Carregando usuários do banco de dados");
+      const data = await userAPI.getAll();
+      console.log("Usuários carregados:", data);
+      setUsers(data);
+    } catch (error) {
+      console.error("Erro ao carregar usuários:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Não foi possível carregar a lista de usuários.",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
   
-  const handleCreateUser = () => {
+  const handleCreateUser = async () => {
     if (!newUser.name || !newUser.email || !newUser.matricula) {
       toast({
         title: "Erro",
@@ -75,99 +100,143 @@ export default function UserListPage() {
       });
       return;
     }
-    
+  
     try {
-      const createdUser = createUser({
+      setLoading(true);
+  
+      console.log("Enviando dados para API:", newUser);
+  
+      const createdUser = await userAPI.create({
         ...newUser,
         isFirstAccess: true
       });
-      
-      setUsers(prev => [...prev, createdUser]);
-      
-      console.log("Enviando email para", createdUser.email);
+  
+      console.log("Usuário criado com sucesso:", createdUser);
+  
       toast({
         title: "Usuário criado",
         description: `E-mail com senha temporária enviado para ${createdUser.email}`
       });
-      
+  
+
+  
+      // Limpa o formulário
       setNewUser({
         name: "",
         email: "",
         matricula: "",
         role: UserRole.USUARIO
       });
-      
+  
       setIsCreateDialogOpen(false);
+      loadUsers();
     } catch (error) {
+      console.error("Erro ao criar usuário:", error);
       const errorMessage = error instanceof Error ? error.message : "Erro ao criar usuário";
       toast({
         title: "Erro",
         description: errorMessage,
         variant: "destructive"
       });
+    } finally {
+      setLoading(false);
     }
   };
+
   
-  const handleEditUser = () => {
+  ////   editar usuario
+  const handleEditUser = async () => {
     if (!selectedUser) return;
-    
+  
+    // Validação no frontend
+    if (!selectedUser.email || !selectedUser.name || !selectedUser.matricula || !selectedUser.role) {
+      toast({
+        title: "Erro",
+        description: "Dados incompletos para atualização do usuário.",
+        variant: "destructive",
+      });
+      return;
+    }
+  
     try {
-      const updatedUser = updateUserInDb(selectedUser.id, selectedUser);
-      
+      // Chama a função update para atualizar o usuário no backend
+      const updatedUser = await userAPI.update(selectedUser.id, selectedUser);
+  
       if (updatedUser) {
-        setUsers(prev => 
+        setUsers(prev =>
           prev.map(u => u.id === updatedUser.id ? updatedUser : u)
         );
-        
+  
         toast({
           title: "Usuário atualizado",
-          description: `Dados de ${updatedUser.name} atualizados com sucesso`
+          description: `Dados de ${updatedUser.name} atualizados com sucesso`,
         });
       }
-      
+  
       setIsEditDialogOpen(false);
       setSelectedUser(null);
+      loadUsers();  // Carregar a lista de usuários novamente
+  
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Erro ao atualizar usuário";
       toast({
         title: "Erro",
         description: errorMessage,
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   };
   
-  const handleDeleteUser = () => {
+  
+  
+  ////  exclusão de usuario
+  const handleDeleteUser = async () => {
     if (!selectedUser) return;
-    
+  
     try {
-      const success = deleteUserInDb(selectedUser.id);
-      
-      if (success) {
-        setUsers(prev => prev.filter(u => u.id !== selectedUser.id));
-        
-        toast({
-          title: "Usuário excluído",
-          description: `${selectedUser.name} foi removido do sistema`
-        });
-      }
-      
+      await userAPI.delete(selectedUser.id);
+  
+      toast({
+        title: "Usuário excluído",
+        description: `${selectedUser.name} foi removido do sistema.`,
+      });
+  
+      // Atualiza lista de usuários (recarrega do banco)
+
+    } catch (error) {
+      console.error("Erro ao excluir usuário:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Não foi possível excluir o usuário.",
+      });
+    } finally {
       setIsDeleteDialogOpen(false);
       setSelectedUser(null);
-    } catch (error) {
-      toast({
-        title: "Erro",
-        description: "Não foi possível excluir o usuário",
-        variant: "destructive"
-      });
+      loadUsers();
     }
   };
   
-  const handleResetPassword = (user: User) => {
-    toast({
-      title: "Senha redefinida",
-      description: `Nova senha temporária enviada para ${user.email}`
-    });
+
+  const handleResetPassword = async (user: User) => {
+    try {
+      // Chama a API para redefinir a senha do usuário usando o email
+      await authAPI.resetPassword(user.email);
+      console.log("Teste de chamar o resete para o email: ", user.email);
+      // Exibe uma mensagem de sucesso
+      toast({
+        title: "Senha redefinida",
+        description: `Nova senha temporária enviada para ${user.email}`,
+      });
+    } catch (error) {
+      // Em caso de erro, exibe uma mensagem de erro
+      const errorMessage = error instanceof Error ? error.message : "Erro ao redefinir senha";
+      toast({
+        title: "Erro",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    }
   };
   
   if (!canManageUsers) {
@@ -241,7 +310,7 @@ export default function UserListPage() {
                 <Button 
                   variant="outline" 
                   size="sm" 
-                  onClick={() => handleResetPassword(user)}
+                  onClick={() => handleResetPassword(user)} // Passando o usuário para a função
                 >
                   <Mail className="h-4 w-4 mr-1" /> Redefinir Senha
                 </Button>

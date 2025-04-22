@@ -1,162 +1,133 @@
 
-import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { 
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle
-} from "@/components/ui/alert-dialog";
-import { Input } from "@/components/ui/input";
+import { materialAPI } from "@/services/api";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { AlertCircle } from "lucide-react";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { materialAPI } from "@/services/api";
 import { toast } from "@/components/ui/use-toast";
 
 interface DeleteMaterialDialogProps {
   materialId: string;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onDeleted: () => void;
+  materialName: string;
+  isOpen: boolean;
+  onClose: () => void;
 }
 
 export function DeleteMaterialDialog({
   materialId,
-  open,
-  onOpenChange,
-  onDeleted
+  materialName,
+  isOpen,
+  onClose,
 }: DeleteMaterialDialogProps) {
-  const { user } = useAuth();
   const [reason, setReason] = useState("");
-  const [confirmedId, setConfirmedId] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
-  const [error, setError] = useState("");
-  
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
   const handleDelete = async () => {
-    if (!user) {
-      setError("Você precisa estar logado para realizar esta ação");
-      return;
-    }
-    
     if (!reason.trim()) {
-      setError("O motivo da exclusão é obrigatório");
-      return;
-    }
-    
-    if (confirmedId !== materialId) {
-      setError("ID de confirmação não corresponde ao ID do material");
-      return;
-    }
-    
-    setIsDeleting(true);
-    setError("");
-    
-    try {
-      await materialAPI.delete(materialId, reason, user.email);
-      
-      toast({
-        title: "Material excluído",
-        description: "O material foi excluído com sucesso."
-      });
-      
-      // Fechar o dialog e notificar sobre a exclusão
-      onOpenChange(false);
-      onDeleted();
-    } catch (err: any) {
-      const errorMessage = err.response?.data?.error || "Erro ao excluir material";
-      setError(errorMessage);
-      
       toast({
         title: "Erro",
-        description: errorMessage,
-        variant: "destructive"
+        description: "Por favor, informe o motivo da exclusão.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!user?.id) {
+      toast({
+        title: "Erro",
+        description: "Usuário não identificado. Por favor, faça login novamente.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setIsDeleting(true);
+      console.log(`Deletando material ${materialId} com motivo: ${reason}`);
+      
+      const result = await materialAPI.delete(materialId, reason, user.id);
+      
+      if (result) {
+        toast({
+          title: "Material excluído",
+          description: "O material foi excluído com sucesso.",
+        });
+        navigate("/materiais");
+      } else {
+        throw new Error("Falha ao excluir material");
+      }
+    } catch (error) {
+      console.error("Erro ao excluir material:", error);
+      toast({
+        title: "Erro",
+        description: "Ocorreu um erro ao excluir o material. Tente novamente.",
+        variant: "destructive",
       });
     } finally {
       setIsDeleting(false);
+      onClose();
     }
   };
-  
-  // Resetar estado ao abrir/fechar
-  const handleOpenChange = (open: boolean) => {
-    if (!open) {
-      setReason("");
-      setConfirmedId("");
-      setError("");
-    }
-    onOpenChange(open);
-  };
-  
+
   return (
-    <AlertDialog open={open} onOpenChange={handleOpenChange}>
-      <AlertDialogContent className="max-w-md">
-        <AlertDialogHeader>
-          <AlertDialogTitle className="text-destructive">
-            Excluir Material
-          </AlertDialogTitle>
-          <AlertDialogDescription>
-            Esta ação não pode ser desfeita. O material será removido permanentemente
-            do sistema, mas ficará disponível no histórico de exclusões.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        
-        {error && (
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
-        
-        <div className="space-y-4 py-2">
-          <div className="space-y-2">
-            <Label htmlFor="delete-reason" className="text-destructive">
-              Motivo da exclusão <span className="text-destructive">*</span>
-            </Label>
-            <Textarea
-              id="delete-reason"
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
-              placeholder="Descreva o motivo da exclusão deste material"
-              disabled={isDeleting}
-              className="resize-none"
-              required
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="confirm-id" className="text-destructive">
-              Confirme o ID <span className="text-destructive">*</span>
-            </Label>
-            <Input
-              id="confirm-id"
-              value={confirmedId}
-              onChange={(e) => setConfirmedId(e.target.value)}
-              placeholder={`Digite ${materialId} para confirmar`}
-              disabled={isDeleting}
-              required
-            />
-            <p className="text-xs text-muted-foreground">
-              Para confirmar a exclusão, digite o ID do material: <strong>{materialId}</strong>
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[500px]">
+        <DialogHeader>
+          <DialogTitle>Excluir Material</DialogTitle>
+          <DialogDescription>
+            Essa ação não pode ser desfeita. O material será movido para a lista
+            de itens excluídos.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="grid gap-4 py-4">
+          <div>
+            <p className="text-sm text-muted-foreground mb-4">
+              Você está prestes a excluir o material:{" "}
+              <span className="font-medium text-foreground">{materialName}</span>
             </p>
           </div>
+
+          <div className="grid gap-2">
+            <Label htmlFor="reason" className="required">
+              Motivo da Exclusão
+            </Label>
+            <Textarea
+              id="reason"
+              placeholder="Informe o motivo da exclusão..."
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              rows={3}
+              className="resize-none"
+            />
+          </div>
         </div>
-        
-        <AlertDialogFooter>
-          <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
-          <AlertDialogAction
+
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose} disabled={isDeleting}>
+            Cancelar
+          </Button>
+          <Button
+            variant="destructive"
             onClick={handleDelete}
-            disabled={isDeleting || !reason.trim() || confirmedId !== materialId}
-            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            disabled={!reason.trim() || isDeleting}
           >
             {isDeleting ? "Excluindo..." : "Excluir Material"}
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

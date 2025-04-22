@@ -96,6 +96,19 @@ class SMTPService {
       `
     });
   }
+  async sendPasswordNewuser(to, tempsenha) {
+    return this.sendEmail({
+      to,
+      subject: 'Recuperação de Senha - LamiSys',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <h2>Recuperação de Senha - LamiSys</h2>
+          <p>Sua senha temporária é: <strong>${tempsenha}</strong></p>
+          <p>Por favor, altere esta senha no seu próximo acesso.</p>
+        </div>
+      `
+    });
+  }
 }
 
 // Export a singleton instance

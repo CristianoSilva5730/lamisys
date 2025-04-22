@@ -13,7 +13,7 @@ import { MaterialHistory } from "@/components/materiais/MaterialHistory";
 import { AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { materialAPI } from "@/services/api";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "@/hooks/use-toast";
 
 interface MaterialFormProps {
   material?: Material;
@@ -93,27 +93,38 @@ export function MaterialForm({ material, isEditing = false }: MaterialFormProps)
     setError("");
     
     try {
+      console.log("Submetendo formulário de material, modo de edição:", isEditing);
+      
       if (isEditing && material) {
+        console.log("Atualizando material existente:", material.id);
         // Atualizar material existente via API
-        await materialAPI.update(
+        const updatedMaterial = await materialAPI.update(
           material.id,
           formData,
-          user.email
+          user.id // Usando o ID do usuário em vez do email
         );
+        
+        console.log("Material atualizado:", updatedMaterial);
         
         toast({
           title: "Sucesso",
           description: "Material atualizado com sucesso."
         });
       } else {
+        console.log("Criando novo material");
         // Criar novo material via API
         const materialData = {
           ...formData,
-          createdBy: user.email,
+          id: Date.now().toString(), // Gerar ID único
+          createdBy: user.id, // Usando o ID do usuário em vez do email
           createdAt: new Date().toISOString()
         };
         
-        await materialAPI.create(materialData);
+        console.log("Dados completos do material:", materialData);
+        
+        const newMaterial = await materialAPI.create(materialData);
+        
+        console.log("Material criado:", newMaterial);
         
         toast({
           title: "Sucesso",
@@ -124,7 +135,15 @@ export function MaterialForm({ material, isEditing = false }: MaterialFormProps)
       // Redirecionar para a lista após sucesso
       navigate("/materiais");
     } catch (err: any) {
-      const errorMessage = err.response?.data?.error || "Erro ao processar material";
+      console.error("Erro ao processar material:", err);
+      
+      let errorMessage = err.response?.data?.error || "Erro ao processar material";
+      
+      // Adicionar mensagem específica para erro de foreign key
+      if (err.message?.includes('FOREIGN_KEY') || errorMessage.includes('FOREIGN_KEY')) {
+        errorMessage = "Erro de referência no banco de dados. Verifique se o seu usuário está cadastrado corretamente no sistema.";
+      }
+      
       setError(errorMessage);
       
       toast({

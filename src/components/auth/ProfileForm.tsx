@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -19,6 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
+import { userAPI } from "@/services/api";
 
 const profileSchema = z.object({
   name: z.string().min(1, "Nome é obrigatório"),
@@ -33,6 +34,7 @@ export function ProfileForm() {
   const { user, updateUser } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<ProfileValues>({
     resolver: zodResolver(profileSchema),
@@ -45,19 +47,40 @@ export function ProfileForm() {
   });
 
   const onSubmit = async (data: ProfileValues) => {
+    if (!user?.id) {
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "ID do usuário não encontrado. Faça login novamente.",
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+
     try {
-      // Atualizar os dados do usuário
-      updateUser(data);
+      console.log("Atualizando perfil do usuário:", user.id, data);
+      
+      // Chamar a API para atualizar os dados no banco
+      const updatedUser = await userAPI.update(user.id, data);
+      console.log("Resposta da API:", updatedUser);
+      
+      // Atualizar o contexto de autenticação
+      updateUser(updatedUser);
+      
       toast({
         title: "Perfil atualizado",
         description: "Suas informações foram atualizadas com sucesso.",
       });
     } catch (error) {
+      console.error("Erro ao atualizar perfil:", error);
       toast({
         variant: "destructive",
         title: "Erro ao atualizar perfil",
-        description: "Ocorreu um erro ao atualizar suas informações.",
+        description: "Ocorreu um erro ao atualizar suas informações. Tente novamente.",
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -150,9 +173,9 @@ export function ProfileForm() {
             />
 
             <div className="flex justify-end">
-              <Button type="submit">
+              <Button type="submit" disabled={isSubmitting}>
                 <UserPen className="mr-2 h-4 w-4" />
-                Atualizar Perfil
+                {isSubmitting ? "Atualizando..." : "Atualizar Perfil"}
               </Button>
             </div>
           </form>

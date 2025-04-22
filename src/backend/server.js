@@ -1,4 +1,3 @@
-
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
@@ -43,6 +42,27 @@ function startServer() {
     
     // API Routes
     // Prefix all API routes with /api
+    
+    // Status endpoint to check if server is running and database is connected
+    app.get('/api/status', (req, res) => {
+      try {
+        // Check database connection
+        const dbStatus = db.checkDatabaseConnection();
+        
+        res.json({
+          status: 'online',
+          database: dbStatus,
+          timestamp: new Date().toISOString()
+        });
+      } catch (err) {
+        console.error('Error checking status:', err);
+        res.status(500).json({ 
+          status: 'error', 
+          error: err.message,
+          database: { connected: false, message: 'Error checking database connection' }
+        });
+      }
+    });
     
     // User management routes
     app.get('/api/users', (req, res) => {
@@ -90,6 +110,21 @@ function startServer() {
         
         const newUser = db.createUser(user);
         res.status(201).json(newUser);
+        //${user.name}${user.matricula}
+        tempsenha === `${user.name}${user.matricula}`;
+        console.log(`Senha temporaria ${user.name}${user.matricula}`);
+        
+        // Try sending email if SMTP is configured
+        try {
+          const smtpConfig = db.getSMTPConfig();
+          if (smtpConfig && smtpConfig.server) {
+            smtpService.sendPasswordNewuser(email, tempsenha);
+          }
+        } catch (emailErr) {
+          console.error('Error sending password reset email:', emailErr);
+          // Continue even if email fails
+        }
+
       } catch (err) {
         console.error('Error ao criar usuário:', err);
         res.status(500).json({ error: 'Error ao criar usuário' });
@@ -100,13 +135,18 @@ function startServer() {
       try {
         const id = req.params.id;
         const updates = req.body;
-        
+    
+        // Verificar se os dados de atualização são válidos
+        if (!updates.email || !updates.name || !updates.matricula || !updates.role) {
+          return res.status(400).json({ error: 'Dados incompletos para atualização' });
+        }
+    
         // Verificar se o usuário existe
         const existingUser = db.getUserById(id);
         if (!existingUser) {
           return res.status(404).json({ error: 'Usuário não encontrado' });
         }
-        
+    
         // Verificar email duplicado
         if (updates.email && updates.email !== existingUser.email) {
           const emailExists = db.getUserByEmail(updates.email);
@@ -114,12 +154,15 @@ function startServer() {
             return res.status(409).json({ error: 'Email já cadastrado' });
           }
         }
-        
+    
+        // Atualizar os dados do usuário
         const updatedUser = db.updateUser(id, updates);
+        
+        // Retornar os dados atualizados
         res.json(updatedUser);
       } catch (err) {
         console.error('Error ao atualizar usuário:', err);
-        res.status(500).json({ error: 'Error ao atualizar usuário' });
+        res.status(500).json({ error: 'Erro ao atualizar usuário' });
       }
     });
     
@@ -140,7 +183,7 @@ function startServer() {
         res.status(500).json({ error: 'Error ao excluir usuário' });
       }
     });
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////    
+    
     // Authentication route
     app.post('/api/login', (req, res) => {
       try {
@@ -277,7 +320,7 @@ function startServer() {
         res.status(500).json({ error: 'Error changing password' });
       }
     });
- ////////////////////////////////////////////////////////////////////////////////////////////////////////////////   
+    
     // Material management routes
     app.get('/api/materials', (req, res) => {
       try {
@@ -510,11 +553,6 @@ function startServer() {
         console.error('Error restoring backup:', err);
         res.status(500).json({ error: 'Error restoring backup' });
       }
-    });
-    
-    // Route to check if the server is online
-    app.get('/api/status', (req, res) => {
-      res.json({ status: 'online' });
     });
     
     // Setting up static file serving...

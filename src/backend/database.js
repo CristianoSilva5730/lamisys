@@ -1,9 +1,9 @@
 const path = require('path');
 const fs = require('fs');
 const Database = require('better-sqlite3');
-// Inicializa a conexão com o banco
-// // const db = new Database('lamisys.db'); // ou o nome correto do seu arquivo .db
 
+// Inicializa a variável do banco de dados globalmente
+let db;
 
 // Determine database directory without using electron app
 const getAppDataPath = () => {
@@ -21,6 +21,11 @@ const getAppDataPath = () => {
     userDataPath = path.join(process.env.HOME, '.lamisys');
   }
   
+  // For development, use local file in project directory
+  if (process.env.NODE_ENV === 'development') {
+    return path.join(process.cwd(), 'lamisys.db');
+  }
+  
   const dbFolder = path.join(userDataPath, 'database');
   
   // Create the directory if it doesn't exist
@@ -32,14 +37,18 @@ const getAppDataPath = () => {
 };
 
 // Initialize the database
-
-
 function initDatabase() {
   try {
     const dbPath = getAppDataPath();
     console.log(`Initializing database at: ${dbPath}`);
     
-    db = new Database(dbPath);
+    // Check if the database file exists
+    const dbExists = fs.existsSync(dbPath);
+    console.log(`Database exists: ${dbExists}`);
+    
+    // Open the database with verbose logging
+    const options = { verbose: console.log };
+    db = new Database(dbPath, options);
     
     // Enable foreign keys
     db.pragma('foreign_keys = ON');
@@ -47,9 +56,13 @@ function initDatabase() {
     // Create tables if they don't exist
     createTables();
     
+    // Log success
+    console.log('Database initialized successfully at:', dbPath);
+    
     return db;
   } catch (err) {
     console.error('Error initializing database:', err.message);
+    console.error('Stack trace:', err.stack);
     throw err;
   }
 }
@@ -203,12 +216,19 @@ function seedDatabase() {
       });
       
       // Configuração SMTP padrão
-      db.prepare(`
-        INSERT INTO smtp_config (id, server, port, fromEmail)
-        VALUES (1, ?, ?, ?)
-      `).run('10.6.250.1', 25, 'LamiSys@sinobras.com.br');
+      try {
+        db.prepare(`
+          INSERT INTO smtp_config (id, server, port, fromEmail)
+          VALUES (1, ?, ?, ?)
+        `).run('10.6.250.1', 25, 'LamiSys@sinobras.com.br');
+        console.log("Configuração SMTP inserida com sucesso");
+      } catch (err) {
+        console.error('Erro ao inserir configuração SMTP:', err.message);
+      }
       
       console.log("Dados iniciais inseridos com sucesso");
+    } else {
+      console.log(`Banco já possui ${userCount} usuários, pulando seed.`);
     }
   } catch (err) {
     console.error('Erro ao popular banco de dados:', err);
@@ -244,35 +264,66 @@ function backupDatabase(backupPath) {
 
 // Funções para CRUD de usuários
 function getAllUsers() {
-  return db.prepare('SELECT * FROM users').all();
+  try {
+    console.log("Buscando todos os usuários...");
+    const users = db.prepare('SELECT * FROM users').all();
+    console.log(`Encontrados ${users.length} usuários`);
+    return users;
+  } catch (err) {
+    console.error('Erro ao buscar usuários:', err.message);
+    throw err;
+  }
 }
 
 function getUserById(id) {
-  return db.prepare('SELECT * FROM users WHERE id = ?').get(id);
+  try {
+    console.log(`Buscando usuário com ID: ${id}`);
+    const user = db.prepare('SELECT * FROM users WHERE id = ?').get(id);
+    console.log(`Usuário encontrado: ${user ? 'Sim' : 'Não'}`);
+    return user;
+  } catch (err) {
+    console.error(`Erro ao buscar usuário com ID ${id}:`, err.message);
+    throw err;
+  }
 }
 
 function getUserByEmail(email) {
-  return db.prepare('SELECT * FROM users WHERE email = ?').get(email);
+  try {
+    console.log(`Buscando usuário com email: ${email}`);
+    const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email);
+    console.log(`Usuário encontrado: ${user ? 'Sim' : 'Não'}`);
+    return user;
+  } catch (err) {
+    console.error(`Erro ao buscar usuário com email ${email}:`, err.message);
+    throw err;
+  }
 }
 
 function createUser(user) {
   const { id, name, email, matricula, role, avatar = '', isFirstAccess = 1 } = user;
   
+  // ✅ Força conversão booleana para número (true -> 1, false -> 0)
+  const isFirstAccessNumeric = isFirstAccess ? 1 : 0;
+
   try {
+    console.log(`Criando usuário: ${email}`);
     const result = db.prepare(`
       INSERT INTO users (id, name, email, matricula, role, avatar, isFirstAccess)
       VALUES (?, ?, ?, ?, ?, ?, ?)
-    `).run(id, name, email, matricula, role, avatar, isFirstAccess);
+    `).run(id, name, email, matricula, role, avatar, isFirstAccessNumeric); // 👈 aplica aqui
     
     if (result.changes > 0) {
+      console.log(`Usuário ${email} criado com sucesso`);
       return getUserById(id);
     }
+    console.log(`Falha ao criar usuário ${email}`);
     return null;
   } catch (err) {
     console.error('Erro ao criar usuário:', err.message);
     throw err;
   }
 }
+
 
 function updateUser(id, updates) {
   // Construir a query dinamicamente com os campos a serem atualizados
@@ -281,6 +332,8 @@ function updateUser(id, updates) {
   if (fields.length === 0) {
     return getUserById(id);
   }
+  
+  console.log(`Atualizando usuário ${id} com campos:`, fields);
   
   const setClauses = fields.map(field => `${field} = ?`).join(', ');
   const values = fields.map(field => updates[field]);
@@ -292,10 +345,18 @@ function updateUser(id, updates) {
   `;
   
   try {
+    console.log('Query de atualização:', query);
+    console.log('Valores:', [...values, id]);
+    
     const result = db.prepare(query).run(...values, id);
+    console.log(`Resultado da atualização: ${result.changes} registros afetados`);
+    
     if (result.changes > 0) {
-      return getUserById(id);
+      const updated = getUserById(id);
+      console.log('Usuário atualizado:', updated);
+      return updated;
     }
+    console.log('Nenhum usuário foi atualizado');
     return null;
   } catch (err) {
     console.error('Erro ao atualizar usuário:', err.message);
@@ -315,26 +376,78 @@ function deleteUser(id) {
 
 // Funções para CRUD de materiais
 function getAllMaterials(includeDeleted = false) {
-  let query = 'SELECT * FROM materials';
-  if (!includeDeleted) {
-    query += ' WHERE deleted = 0';
+  try {
+    let query = 'SELECT * FROM materials';
+    if (!includeDeleted) {
+      query += ' WHERE deleted = 0 OR deleted IS NULL';
+    }
+    console.log(`Buscando materiais com query: ${query}`);
+    const materials = db.prepare(query).all();
+    console.log(`Encontrados ${materials.length} materiais`);
+    
+    // Adicionar histórico a cada material
+    for (const material of materials) {
+      try {
+        material.history = db.prepare('SELECT * FROM history WHERE material_id = ?').all(material.id);
+      } catch (historyErr) {
+        console.error(`Erro ao buscar histórico para material ${material.id}:`, historyErr.message);
+        material.history = [];
+      }
+    }
+    
+    return materials;
+  } catch (err) {
+    console.error('Erro ao buscar materiais:', err.message);
+    throw err;
   }
-  return db.prepare(query).all();
 }
 
 function getDeletedMaterials() {
-  return db.prepare('SELECT * FROM materials WHERE deleted = 1').all();
+  try {
+    console.log('Buscando materiais excluídos');
+    const materials = db.prepare('SELECT * FROM materials WHERE deleted = 1').all();
+    console.log(`Encontrados ${materials.length} materiais excluídos`);
+    
+    // Adicionar histórico a cada material
+    for (const material of materials) {
+      try {
+        material.history = db.prepare('SELECT * FROM history WHERE material_id = ?').all(material.id);
+      } catch (historyErr) {
+        console.error(`Erro ao buscar histórico para material ${material.id}:`, historyErr.message);
+        material.history = [];
+      }
+    }
+    
+    return materials;
+  } catch (err) {
+    console.error('Erro ao buscar materiais excluídos:', err.message);
+    throw err;
+  }
 }
 
 function getMaterialById(id) {
-  const material = db.prepare('SELECT * FROM materials WHERE id = ?').get(id);
-  
-  if (material) {
-    // Carregar histórico
-    material.history = db.prepare('SELECT * FROM history WHERE material_id = ?').all(id);
+  try {
+    console.log(`Buscando material com ID: ${id}`);
+    const material = db.prepare('SELECT * FROM materials WHERE id = ?').get(id);
+    
+    if (material) {
+      console.log(`Material encontrado: ${material.notaFiscal}`);
+      // Carregar histórico
+      try {
+        material.history = db.prepare('SELECT * FROM history WHERE material_id = ?').all(id);
+      } catch (historyErr) {
+        console.error(`Erro ao buscar histórico para material ${id}:`, historyErr.message);
+        material.history = [];
+      }
+    } else {
+      console.log(`Material não encontrado: ${id}`);
+    }
+    
+    return material;
+  } catch (err) {
+    console.error(`Erro ao buscar material com ID ${id}:`, err.message);
+    throw err;
   }
-  
-  return material;
 }
 
 function createMaterial(material) {
@@ -359,25 +472,43 @@ function createMaterial(material) {
   } = material;
   
   try {
+    console.log(`Criando material: ${notaFiscal}`);
+    console.log('Dados do material:', material);
+    
+    // Verificar se o usuário existe
+    const userExists = db.prepare('SELECT 1 FROM users WHERE id = ?').get(createdBy);
+    
+    if (!userExists) {
+      console.error(`Erro: Usuário com ID ${createdBy} não existe no banco de dados`);
+      throw new Error(`FOREIGN KEY constraint failed: O usuário com ID ${createdBy} não existe no banco de dados`);
+    }
+    
     const result = db.prepare(`
       INSERT INTO materials (
         id, notaFiscal, numeroOrdem, detalhesEquipamento, tipoOrdem, tipoMaterial,
         remessa, codigoSAP, empresa, transportadora, dataEnvio, dataRemessa,
-        status, observacoes, comentarios, createdBy, createdAt
+        status, observacoes, comentarios, createdBy, createdAt, deleted
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
     `).run(
       id, notaFiscal, numeroOrdem, detalhesEquipamento, tipoOrdem, tipoMaterial,
       remessa, codigoSAP, empresa, transportadora, dataEnvio, dataRemessa,
       status, observacoes, comentarios, createdBy, createdAt
     );
     
+    console.log(`Resultado da inserção: ${result.changes} registros afetados`);
+    
     if (result.changes > 0) {
-      return getMaterialById(id);
+      const newMaterial = getMaterialById(id);
+      console.log('Material criado:', newMaterial);
+      return newMaterial;
     }
+    
+    console.log('Falha ao criar material');
     return null;
   } catch (err) {
     console.error('Erro ao criar material:', err.message);
+    console.error('Stack trace:', err.stack);
     throw err;
   }
 }
@@ -386,8 +517,12 @@ function updateMaterial(id, updates, updatedBy) {
   // Verificar se o material existe
   const material = getMaterialById(id);
   if (!material) {
+    console.log(`Material não encontrado: ${id}`);
     return null;
   }
+  
+  console.log(`Atualizando material ${id} - ${material.notaFiscal}`);
+  console.log('Atualizações:', updates);
   
   // Filtrar os campos que podem ser atualizados
   const allowedFields = [
@@ -419,6 +554,7 @@ function updateMaterial(id, updates, updatedBy) {
   
   // Se não houver campos a atualizar, retornar o material atual
   if (Object.keys(updateData).length === 0) {
+    console.log('Nenhum campo para atualizar');
     return material;
   }
   
@@ -431,41 +567,59 @@ function updateMaterial(id, updates, updatedBy) {
   const setClauses = fields.map(field => `${field} = ?`).join(', ');
   const values = fields.map(field => updateData[field]);
   
+  console.log('Campos a atualizar:', fields);
+  console.log('Valores:', values);
+  
   // Iniciar transação
   const transaction = db.transaction(() => {
     // Atualizar material
-    db.prepare(`
+    const updateQuery = `
       UPDATE materials 
       SET ${setClauses}
       WHERE id = ?
-    `).run(...values, id);
+    `;
+    console.log('Query de atualização:', updateQuery);
+    
+    const updateResult = db.prepare(updateQuery).run(...values, id);
+    console.log(`Resultado da atualização: ${updateResult.changes} registros afetados`);
     
     // Inserir entradas no histórico
-    const insertHistory = db.prepare(`
-      INSERT INTO history (id, material_id, field, oldValue, newValue, updatedBy, updatedAt)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    `);
-    
-    historyEntries.forEach(entry => {
-      insertHistory.run(
-        entry.id,
-        entry.material_id,
-        entry.field,
-        entry.oldValue,
-        entry.newValue,
-        entry.updatedBy,
-        entry.updatedAt
-      );
-    });
+    if (historyEntries.length > 0) {
+      console.log(`Inserindo ${historyEntries.length} registros no histórico`);
+      
+      const insertHistory = db.prepare(`
+        INSERT INTO history (id, material_id, field, oldValue, newValue, updatedBy, updatedAt)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+      `);
+      
+      historyEntries.forEach(entry => {
+        try {
+          insertHistory.run(
+            entry.id,
+            entry.material_id,
+            entry.field,
+            entry.oldValue,
+            entry.newValue,
+            entry.updatedBy,
+            entry.updatedAt
+          );
+          console.log(`Histórico inserido para campo ${entry.field}`);
+        } catch (historyErr) {
+          console.error(`Erro ao inserir histórico para campo ${entry.field}:`, historyErr.message);
+        }
+      });
+    }
     
     // Retornar o material atualizado
     return getMaterialById(id);
   });
   
   try {
-    return transaction();
+    const result = transaction();
+    console.log('Material atualizado com sucesso');
+    return result;
   } catch (err) {
-    console.error('Erro ao atualizar material:', err.message);
+    console.error('Erro na transação de atualização do material:', err.message);
     throw err;
   }
 }
@@ -666,6 +820,128 @@ function updateSMTPConfig(config) {
   }
 }
 
+// Export function to check database connection
+function checkDatabaseConnection() {
+  try {
+    if (!db) {
+      return { connected: false, message: 'Database not initialized' };
+    }
+    
+    // Try a simple query to check the connection
+    const result = db.prepare('SELECT 1 as test').get();
+    
+    // Check if users table has data
+    const userCount = db.prepare('SELECT COUNT(*) as count FROM users').get().count;
+    console.log(`Número de usuários no banco: ${userCount}`);
+    
+    if (userCount === 0) {
+      // Run seed if no users exist
+      console.log('Nenhum usuário encontrado, executando seedDatabase()');
+      seedDatabase();
+    }
+    
+    return { 
+      connected: result && result.test === 1, 
+      message: 'Database connection successful',
+      userCount
+    };
+  } catch (err) {
+    return { 
+      connected: false, 
+      message: `Database connection error: ${err.message}` 
+    };
+  }
+}
+
+// Export function to export database
+function exportDatabase() {
+  try {
+    if (!db) {
+      throw new Error('Database not initialized');
+    }
+    
+    // Get data from all tables
+    const users = db.prepare('SELECT * FROM users').all();
+    const materials = db.prepare('SELECT * FROM materials').all();
+    const history = db.prepare('SELECT * FROM history').all();
+    const alarms = db.prepare('SELECT * FROM alarms').all();
+    const alarmRecipients = db.prepare('SELECT * FROM alarm_recipients').all();
+    const smtpConfig = db.prepare('SELECT * FROM smtp_config').all();
+    
+    return {
+      users,
+      materials,
+      history,
+      alarms,
+      alarmRecipients,
+      smtpConfig
+    };
+  } catch (err) {
+    console.error('Error exporting database:', err.message);
+    throw err;
+  }
+}
+
+// Export function to import database
+function importDatabase(data) {
+  try {
+    if (!db) {
+      throw new Error('Database not initialized');
+    }
+    
+    // Start a transaction
+    db.prepare('BEGIN TRANSACTION').run();
+    
+    try {
+      // Clear all tables first
+      db.prepare('DELETE FROM alarm_recipients').run();
+      db.prepare('DELETE FROM alarms').run();
+      db.prepare('DELETE FROM history').run();
+      db.prepare('DELETE FROM materials').run();
+      db.prepare('DELETE FROM users').run();
+      db.prepare('DELETE FROM smtp_config').run();
+      
+      // Insert data into tables
+      if (data.users && data.users.length) {
+        const insertUser = db.prepare(`
+          INSERT INTO users (id, name, email, matricula, role, avatar, password, isFirstAccess, recoveryPassword, created_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `);
+        
+        data.users.forEach(user => {
+          insertUser.run(
+            user.id,
+            user.name,
+            user.email,
+            user.matricula,
+            user.role,
+            user.avatar || null,
+            user.password || null,
+            user.isFirstAccess || 1,
+            user.recoveryPassword || null,
+            user.created_at || new Date().toISOString()
+          );
+        });
+      }
+      
+      // Continue for other tables...
+      // ... (similar insertion for other tables)
+      
+      // Commit transaction
+      db.prepare('COMMIT').run();
+      
+      return { success: true };
+    } catch (err) {
+      // Rollback on error
+      db.prepare('ROLLBACK').run();
+      throw err;
+    }
+  } catch (err) {
+    console.error('Error importing database:', err.message);
+    throw err;
+  }
+}
+
 module.exports = {
   initDatabase,
   seedDatabase,
@@ -688,5 +964,8 @@ module.exports = {
   updateAlarm,
   deleteAlarm,
   getSMTPConfig,
-  updateSMTPConfig
+  updateSMTPConfig,
+  checkDatabaseConnection,
+  exportDatabase,
+  importDatabase
 };

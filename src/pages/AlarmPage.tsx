@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { alarmAPI } from "@/services/api";
@@ -52,6 +53,7 @@ export default function AlarmPage() {
       const data = await alarmAPI.getAll();
       setAlarms(data);
     } catch (error) {
+      console.error("Erro ao carregar alarmes:", error);
       toast({
         variant: "destructive",
         title: "Erro",
@@ -70,21 +72,32 @@ export default function AlarmPage() {
       value: 7,
       recipients: [],
       active: true,
-      createdBy: user?.email || "sistema"
+      createdBy: user?.id || "" // Changed from email to id
     });
     setIsDialogOpen(true);
   };
 
   const handleSaveAlarm = async () => {
     try {
+      // Ensure value is a number, not a string
+      let alarmToSave = { ...currentAlarm };
+      if (alarmToSave.value) {
+        alarmToSave.value = Number(alarmToSave.value);
+      }
+      
+      // Set createdAt if it's a new alarm
+      if (!alarmToSave.id) {
+        alarmToSave.createdAt = new Date().toISOString();
+      }
+      
       if (currentAlarm.id) {
-        await alarmAPI.update(currentAlarm.id, currentAlarm as AlarmRule);
+        await alarmAPI.update(currentAlarm.id, alarmToSave as AlarmRule);
         toast({
           title: "Alarme atualizado",
           description: "O alarme foi atualizado com sucesso."
         });
       } else {
-        await alarmAPI.create(currentAlarm as Omit<AlarmRule, "id" | "createdAt">);
+        await alarmAPI.create(alarmToSave as Omit<AlarmRule, "id">);
         toast({
           title: "Alarme criado",
           description: "O novo alarme foi criado com sucesso."
@@ -94,6 +107,7 @@ export default function AlarmPage() {
       await loadAlarms();
       setIsDialogOpen(false);
     } catch (error) {
+      console.error("Erro ao salvar alarme:", error);
       toast({
         variant: "destructive",
         title: "Erro",

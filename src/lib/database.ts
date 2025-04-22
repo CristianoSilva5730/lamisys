@@ -1,8 +1,3 @@
-/**
- * Mock de um banco de dados SQLite.
- * Em um aplicativo real, este código estaria no backend.
- */
-
 import { Material, HistoryEntry, User, AlarmRule, SMTPConfig, MaterialStatus, MaterialType, UserRole } from "@/lib/types";
 
 // Prefixos para evitar colisões com outros apps no localStorage
@@ -256,33 +251,12 @@ export function seedDatabaseIfEmpty(): void {
   if (users.length === 0) {
     const demoUsers: Omit<User, "id">[] = [
       {
-        name: "Admin",
-        email: "admin@sinobras.com.br",
-        matricula: "000001",
-        role: UserRole.ADMIN,
-        avatar: "",
-      },
-      {
         name: "Desenvolvedor",
         email: "dev@sinobras.com.br",
         matricula: "000002",
         role: UserRole.DEVELOP,
         avatar: "",
-      },
-      {
-        name: "Planejador",
-        email: "planejador@sinobras.com.br",
-        matricula: "000003",
-        role: UserRole.PLANEJADOR,
-        avatar: "",
-      },
-      {
-        name: "Usuário",
-        email: "usuario@sinobras.com.br",
-        matricula: "000004",
-        role: UserRole.USUARIO,
-        avatar: "",
-      },
+      }
     ];
     
     demoUsers.forEach(user => {
@@ -313,71 +287,7 @@ export function seedDatabaseIfEmpty(): void {
         status: MaterialStatus.ENVIADO,
         observacoes: "Motor enviado para reparo do rolamento",
         comentarios: "Cliente solicitou urgência",
-      },
-      {
-        notaFiscal: "NF-002/2024",
-        numeroOrdem: "ORD-654321",
-        detalhesEquipamento: "Inversor de Frequência 50kW",
-        tipoOrdem: "Reparo",
-        tipoMaterial: MaterialType.INVERSOR,
-        remessa: "REM-45678",
-        codigoSAP: "SAP-654321",
-        empresa: "WEG",
-        transportadora: "LogTech",
-        dataEnvio: "2024-02-20",
-        dataRemessa: "2024-02-15",
-        status: MaterialStatus.PENDENTE,
-        observacoes: "Inversor com problemas de comunicação",
-        comentarios: "Necessário laudo técnico",
-      },
-      {
-        notaFiscal: "NF-003/2024",
-        numeroOrdem: "ORD-789012",
-        detalhesEquipamento: "Encoder Incremental 1024ppr",
-        tipoOrdem: "Troca",
-        tipoMaterial: MaterialType.ENCODER,
-        remessa: "REM-23456",
-        codigoSAP: "SAP-789012",
-        empresa: "Danfoss",
-        transportadora: "Express Delivery",
-        dataEnvio: "2024-03-05",
-        dataRemessa: "2024-03-01",
-        status: MaterialStatus.ENTREGUE,
-        observacoes: "Encoder danificado durante manutenção",
-        comentarios: "Verificar compatibilidade com o motor",
-      },
-      {
-        notaFiscal: "NF-004/2024",
-        numeroOrdem: "ORD-345678",
-        detalhesEquipamento: "Monitor Industrial 24\"",
-        tipoOrdem: "Reparo",
-        tipoMaterial: MaterialType.MONITOR,
-        remessa: "REM-76543",
-        codigoSAP: "SAP-345678",
-        empresa: "Dell",
-        transportadora: "Rápido Brasil",
-        dataEnvio: "2024-03-10",
-        dataRemessa: "2024-03-08",
-        status: MaterialStatus.DEVOLVIDO,
-        observacoes: "Tela com manchas",
-        comentarios: "Fora de garantia, verificar custo de reparo",
-      },
-      {
-        notaFiscal: "NF-005/2024",
-        numeroOrdem: "ORD-901234",
-        detalhesEquipamento: "Computador Industrial",
-        tipoOrdem: "Upgrade",
-        tipoMaterial: MaterialType.COMPUTADOR,
-        remessa: "REM-12345",
-        codigoSAP: "SAP-901234",
-        empresa: "Advantech",
-        transportadora: "Transporte Seguro",
-        dataEnvio: "2024-03-15",
-        dataRemessa: "2024-03-12",
-        status: MaterialStatus.CONCLUIDO,
-        observacoes: "Upgrade de memória e SSD",
-        comentarios: "Melhorar desempenho para novo SCADA",
-      },
+      }
     ];
     
     demoMaterials.forEach(material => {
@@ -411,22 +321,7 @@ export function seedDatabaseIfEmpty(): void {
         recipients: ["planejador@sinobras.com.br", "admin@sinobras.com.br"],
         active: true,
         createdBy: "dev@sinobras.com.br",
-      },
-      {
-        name: "Notificação de novo material",
-        type: "NOVO_ITEM",
-        recipients: ["planejador@sinobras.com.br"],
-        active: true,
-        createdBy: "dev@sinobras.com.br",
-      },
-      {
-        name: "Alerta de material sem conclusão após 30 dias",
-        type: "TEMPO_TOTAL",
-        value: 30,
-        recipients: ["admin@sinobras.com.br"],
-        active: true,
-        createdBy: "dev@sinobras.com.br",
-      },
+      }
     ];
     
     demoAlarms.forEach(alarm => createAlarm(alarm));
