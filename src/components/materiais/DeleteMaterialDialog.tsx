@@ -1,4 +1,3 @@
-
 import { useAuth } from "@/contexts/AuthContext";
 import { materialAPI } from "@/services/api";
 import { useState } from "react";
@@ -55,8 +54,6 @@ export function DeleteMaterialDialog({
 
     try {
       setIsDeleting(true);
-      console.log(`Deletando material ${materialId} com motivo: ${reason}`);
-      
       const result = await materialAPI.delete(materialId, reason, user.id);
       
       if (result) {
@@ -64,6 +61,7 @@ export function DeleteMaterialDialog({
           title: "Material excluído",
           description: "O material foi excluído com sucesso.",
         });
+        onClose();
         navigate("/materiais");
       } else {
         throw new Error("Falha ao excluir material");
@@ -77,7 +75,6 @@ export function DeleteMaterialDialog({
       });
     } finally {
       setIsDeleting(false);
-      onClose();
     }
   };
 
