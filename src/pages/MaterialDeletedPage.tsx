@@ -18,7 +18,7 @@ export default function MaterialDeletedPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
   
-  const canViewDeleted = hasPermission(user, 'CREATE_DELETE_MATERIAL');
+  const canViewDeleted = hasPermission(user, PERMISSIONS.CREATE_DELETE_MATERIAL);
   
   useEffect(() => {
     const fetchDeletedMaterials = async () => {
@@ -50,10 +50,10 @@ export default function MaterialDeletedPage() {
     } else {
       const query = searchQuery.toLowerCase();
       const filtered = materials.filter(m => 
-        m.notaFiscal.toLowerCase().includes(query) ||
-        m.numeroOrdem.toLowerCase().includes(query) ||
-        m.detalhesEquipamento.toLowerCase().includes(query) ||
-        m.empresa.toLowerCase().includes(query) ||
+        m.notaFiscal?.toLowerCase().includes(query) ||
+        m.numeroOrdem?.toLowerCase().includes(query) ||
+        m.detalhesEquipamento?.toLowerCase().includes(query) ||
+        m.empresa?.toLowerCase().includes(query) ||
         m.deletionReason?.toLowerCase().includes(query) ||
         m.deletedBy?.toLowerCase().includes(query)
       );

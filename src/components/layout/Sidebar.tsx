@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { 
@@ -170,7 +169,7 @@ export function Sidebar() {
                       icon={Archive} 
                       label="Histórico de Exclusões" 
                       path="/materiais/excluidos" 
-                      active={location.pathname === "/materiais/excluidos"} 
+                      active={location.pathname.includes("/materiais/excluidos")} 
                       collapsed={collapsed} 
                     />
                   )}

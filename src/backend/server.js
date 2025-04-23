@@ -4,6 +4,7 @@ const path = require('path');
 const db = require('./database');
 const bcrypt = require('bcryptjs');
 const smtpService = require('./services/smtp');
+const schedulerService = require('./services/scheduler');
 
 // Create the Express server
 const app = express();
@@ -583,6 +584,15 @@ function startServer() {
     // Define port
     const PORT = 8080;
     const HOST = "0.0.0.0";
+    
+    // Initialize the scheduler for automatic alarm processing
+    try {
+      // Start checking alarms every 30 minutes
+      schedulerService.startAlarmScheduler(30);
+      console.log('Alarm scheduler initialized');
+    } catch (schedulerError) {
+      console.error('Error initializing alarm scheduler:', schedulerError);
+    }
     
     // Return app without starting it, so we can test or extend it
     return app.listen(PORT, HOST, () => {
