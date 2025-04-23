@@ -23,7 +23,6 @@ export function MaterialHistory({ history }: MaterialHistoryProps) {
   const [loading, setLoading] = useState(false);
   
   useEffect(() => {
-    // Buscar informações dos usuários que fizeram alterações do banco de dados
     const fetchUserInfo = async () => {
       if (!history || history.length === 0) return;
       
@@ -82,12 +81,10 @@ export function MaterialHistory({ history }: MaterialHistoryProps) {
     );
   }
 
-  // Ordenar por data, do mais recente para o mais antigo
   const sortedHistory = [...history].sort((a, b) => 
     new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
   );
   
-  // Função para formatar campo
   const formatFieldName = (field: string) => {
     const fieldMap: Record<string, string> = {
       notaFiscal: "Nota Fiscal",
@@ -109,7 +106,6 @@ export function MaterialHistory({ history }: MaterialHistoryProps) {
     return fieldMap[field] || field;
   };
   
-  // Função para formatar data
   const formatDate = (dateString: string) => {
     try {
       return format(new Date(dateString), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR });
@@ -118,7 +114,6 @@ export function MaterialHistory({ history }: MaterialHistoryProps) {
     }
   };
   
-  // Função para renderizar as informações do usuário
   const renderUserInfo = (userId: string) => {
     const userInfo = userCache[userId] || { name: 'Usuário desconhecido', email: userId, matricula: '' };
     

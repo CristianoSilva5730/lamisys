@@ -1,3 +1,4 @@
+
 import { User, UserRole } from "@/lib/types";
 
 export const PERMISSIONS = {
@@ -15,7 +16,7 @@ export const hasPermission = (user: User | null, permission: keyof typeof PERMIS
   switch (permission) {
     case 'EDIT_MATERIAL':
     case 'CREATE_DELETE_MATERIAL':
-      return user.role === UserRole.ADMIN || user.role === UserRole.MANAGER || user.role === UserRole.PLANEJADOR || user.role === UserRole.SUPERVISOR;
+      return user.role === UserRole.ADMIN || user.role === UserRole.PLANEJADOR;
     case 'VIEW_EDIT_USERS':
     case 'ACCESS_SETTINGS':
     case 'CREATE_ALARMS':
